@@ -1,5 +1,63 @@
 # NOVA Core
 
+**Current implementation: Phase 2 multi-agent core**, built on the verified
+Phase 1 continuity foundation described below. Open **NOVA Intelligence** for
+the persisted agent graph, plugin evidence, planner revisions, and final plan.
+The provider is **FIXTURE / DETERMINISTIC**: it is not an LLM. All calendar,
+preference, and location context is visibly synthetic demo data.
+
+See [Phase 2 architecture](docs/phase-2-architecture.md),
+[Semantic Kernel ADR](docs/adr/0001-semantic-kernel.md), and
+[Phase 2 final audit](docs/phase-2-final-audit.md).
+
+## Phase 2 intelligence
+
+Five specialized agents implement Context, Planner, Calendar, Memory, and
+Critic responsibilities. Semantic Kernel registers/discovers/invokes three
+bounded native plugins and resolves the fixture provider service. NOVA owns
+authorization, transactional execution claims, idempotency, persistence,
+failure recovery, and deterministic policy enforcement.
+
+For the dinner demonstration, six agent stages retrieve synthetic meeting and
+explicit preference evidence, revise the plan, and obtain Critic PASS. Agent
+records, tool calls, context, and plan remain attached to the same task through
+Desktop → Wearable → Mobile. Agents unnecessary for a task are marked SKIPPED
+without invocation. Restaurant discovery, booking, or message sending is not
+implemented.
+
+Additional endpoints:
+
+```text
+POST /api/v1/tasks/{id}/run-agents   {"idempotency_key":"your-request-key"}
+GET  /api/v1/tasks/{id}/agent-runs
+GET  /api/v1/tasks/{id}/agent-runs/{run_id}
+GET  /api/v1/tasks/{id}/plan
+```
+
+Intelligence runs use validated typed contracts and real PostgreSQL execution
+state. Exact-key retries reuse the original execution; competing new keys are
+rejected while it is running. Fixture execution is synchronous in a FastAPI
+worker thread; no broker or hosted worker is required. On application restart,
+abandoned RUNNING executions are marked FAILED rather than portrayed as done.
+
+The existing local startup command applies both migrations automatically.
+Phase 2 requires no external API keys or paid services. Semantic Kernel's
+mandatory SDK dependencies include commercial-client and telemetry packages;
+NOVA does not configure those clients, credentials, exporters, or services.
+The only registered model service is FixtureModelProvider.
+
+```sh
+python3 scripts/acceptance_phase2.py
+docker compose restart backend frontend
+docker compose up -d --wait
+python3 scripts/acceptance_phase2.py --verify-task TASK_ID_FROM_PREVIOUS_OUTPUT
+```
+
+The complete backend and Playwright suites cover both phases, including
+Phase 1 F-01 regressions and the Phase 2 adversarial races. Runtime dependencies
+are constrained by `backend/requirements.lock.txt`; native Python installation
+can use `pip install -r backend/requirements-dev.txt -c backend/requirements.lock.txt`.
+
 NOVA is a research and portfolio project toward a proactive multimodal personal
 AI operating system. Phase 1 implements its cross-device continuity foundation:
 a task keeps the same identity and persisted context as it moves between
@@ -253,8 +311,8 @@ Phase 1 requires no paid services and makes no model API calls. Dependency
 installation and container image pulls require internet access; runtime task
 operations use local services. Full cost rules live in [AGENTS.md](AGENTS.md).
 
-Future phases may introduce provider abstractions, deterministic AI fixtures,
-optional small local models, budget enforcement, clearly labeled replay demos,
-and justified orchestration/observability infrastructure. Agents, Semantic
-Kernel, Kafka, RAG, VLMs, external integrations, cloud deployments, and real
-hardware integrations are **planned only**, not implemented or simulated here.
+Later phases may introduce optional small local models, additional provider
+adapters, real tool integrations, budget-aware routing, clearly labeled replay
+demos, and justified observability infrastructure. Kafka, RAG, VLMs, external
+integrations, cloud deployments, and real hardware integrations remain
+**planned only**. Phase 3 has not been started.

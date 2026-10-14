@@ -14,6 +14,9 @@ from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_session
+from app.intelligence.api import router as intelligence_router
+from app.intelligence.models import AgentExecution
+from app.intelligence.orchestrator import recover_interrupted_executions
 from app.logging import configure_logging
 from app.models import Device, Task, TaskEvent
 from app.schemas import DeviceRead, EventRead, HandoffRequest, HandoffResponse, TaskCreate, TaskRead
@@ -27,10 +30,12 @@ DB = Annotated[Session, Depends(get_session)]
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging()
+    recover_interrupted_executions()
     yield
 
 
 app = FastAPI(title="NOVA Core", version="1.0.0", lifespan=lifespan)
+app.include_router(intelligence_router)
 
 
 @app.middleware("http")
@@ -59,6 +64,7 @@ async def correlate(request: Request, call_next):
             "path": request.url.path,
             "status_code": response.status_code,
             "latency_ms": round((time.perf_counter() - start) * 1000, 2),
+            "trace_id": response.headers.get("X-Trace-ID"),
         },
     )
     return response
@@ -122,6 +128,7 @@ def ready(session: DB):
     # DB connectivity, migrated tables, and the three seeded contexts are required.
     session.execute(text("SELECT 1"))
     session.execute(select(Task.id).limit(1))
+    session.execute(select(AgentExecution.id).limit(1))
     count = session.scalar(
         select(func.count()).select_from(Device).where(Device.user_id == DEMO_USER_ID)
     )

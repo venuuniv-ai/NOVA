@@ -28,6 +28,7 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
         "Content-Type": "application/json",
         "Cache-Control": "no-store",
         "X-Correlation-ID": response.headers.get("X-Correlation-ID") ?? correlationId,
+        ...(response.headers.get("X-Trace-ID") ? { "X-Trace-ID": response.headers.get("X-Trace-ID")! } : {}),
       },
     });
   } catch {

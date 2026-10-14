@@ -1,4 +1,14 @@
-# Phase 1 architecture
+# NOVA architecture
+
+Phase 2 extends the Phase 1 foundation below with persisted multi-agent
+intelligence. See [phase-2-architecture.md](phase-2-architecture.md) for the
+current agent contracts, Semantic Kernel boundaries, plugin architecture,
+execution protocol, failure policy, and intelligence UI. The task model and
+continuity APIs remain the shared foundation; there is no parallel AI task system.
+
+The Phase 1 checkpoint is local commit
+`d1d80d687171e992c963e92c797ec924ba815cb5`. Its implementation and closed F-01
+finding are preserved in that commit. Phase 2 work remains uncommitted.
 
 ## Scope and system boundary
 

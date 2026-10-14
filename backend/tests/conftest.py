@@ -29,7 +29,9 @@ def migrated_database():
 @pytest.fixture(autouse=True)
 def clean_tasks(migrated_database):
     with engine.begin() as connection:
-        connection.execute(text("TRUNCATE task_events, tasks"))
+        connection.execute(
+            text("TRUNCATE tool_calls, agent_runs, agent_executions, task_events, tasks")
+        )
 
 
 @pytest.fixture
