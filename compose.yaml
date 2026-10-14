@@ -38,6 +38,7 @@ services:
       target: runtime
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-nova}:${POSTGRES_PASSWORD:-nova_local_only}@postgres:5432/${POSTGRES_DB:-nova}
+      REDIS_URL: redis://redis:6379/0
       ENABLE_EXTERNAL_MODEL_TESTS: "false"
       DAILY_AI_BUDGET_USD: "0"
       MAX_REQUEST_COST_USD: "0"
@@ -45,6 +46,8 @@ services:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=3)"]
@@ -87,16 +90,28 @@ services:
       timeout: 3s
       retries: 20
 
+  test-redis:
+    image: redis:7-alpine
+    profiles: ["test"]
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      retries: 20
+
   backend-tests:
     build:
       context: ./backend
       target: test
     profiles: ["test"]
     environment:
+      REDIS_URL: redis://test-redis:6379/0
       DATABASE_URL: postgresql+psycopg://nova_test:nova_test@test-db:5432/nova_test
       ENABLE_EXTERNAL_MODEL_TESTS: "false"
     depends_on:
       test-db:
+        condition: service_healthy
+      test-redis:
         condition: service_healthy
 
 volumes:

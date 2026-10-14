@@ -1,5 +1,11 @@
 # NOVA architecture
 
+Phase 3 adds deterministic proactive triggers, Redis cooldowns, communication
+drafts, payload-bound human decisions, and pure simulated execution. See
+[phase-3-architecture.md](phase-3-architecture.md) and the approval/Redis ADRs.
+PostgreSQL remains authoritative; no real external communication occurs.
+Phase 3 changes are left unstaged for review.
+
 Phase 2 extends the Phase 1 foundation below with persisted multi-agent
 intelligence. See [phase-2-architecture.md](phase-2-architecture.md) for the
 current agent contracts, Semantic Kernel boundaries, plugin architecture,
@@ -8,7 +14,7 @@ continuity APIs remain the shared foundation; there is no parallel AI task syste
 
 The Phase 1 checkpoint is local commit
 `d1d80d687171e992c963e92c797ec924ba815cb5`. Its implementation and closed F-01
-finding are preserved in that commit. Phase 2 work remains uncommitted.
+finding are preserved in that commit. Phase 2 is checkpointed at `1cecd1b276887241d5e46c77159f76f85cc14bd7`.
 
 ## Scope and system boundary
 

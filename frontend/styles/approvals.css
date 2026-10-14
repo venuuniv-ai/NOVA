@@ -1,0 +1,15 @@
+.approval-workspace { border: 1px solid var(--border, #303238); padding: 24px; margin: 24px 0; background: #141619; }
+.risk-summary { padding: 20px 0; }
+.risk-numbers { display: flex; gap: 24px; flex-wrap: wrap; margin: 18px 0; color: #9ba2ac; }
+.risk-numbers b { color: #9cc8b6; font-family: monospace; font-size: 24px; }
+.proposal-card { margin: 24px 0; padding: 22px; }
+.proposal-card blockquote { margin: 18px 0; padding: 18px; border-left: 2px solid #9cc8b6; background: #1a1d21; line-height: 1.6; }
+.proposal-meta { display: grid; gap: 12px; font-family: monospace; font-size: 11px; }
+.proposal-meta dt { color: #8b929c; margin-bottom: 5px; }
+.proposal-meta dd { margin: 0; overflow-wrap: anywhere; }
+.proposal-controls { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+.proposal-card form label { display: block; margin: 14px 0; }
+.proposal-card input, .proposal-card textarea { display: block; width: 100%; margin: 8px 0; background: #101215; color: #e6e9ee; border: 1px solid #383e45; padding: 12px; font: inherit; }
+.proposal-card textarea { min-height: 110px; resize: vertical; }
+.approval-workspace details { padding: 12px; overflow-wrap: anywhere; }
+@media(max-width: 600px) { .approval-workspace { padding: 14px; } .proposal-card { padding: 14px; } .approval-workspace .panel-heading { flex-wrap: wrap; gap: 12px; } }

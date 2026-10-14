@@ -19,6 +19,8 @@ from app.intelligence.models import AgentExecution
 from app.intelligence.orchestrator import recover_interrupted_executions
 from app.logging import configure_logging
 from app.models import Device, Task, TaskEvent
+from app.proactive.api import router as proactive_router
+from app.proactive.models import ActionProposal
 from app.schemas import DeviceRead, EventRead, HandoffRequest, HandoffResponse, TaskCreate, TaskRead
 from app.seed import DEMO_USER_ID
 from app.service import create_task, find_task, handoff_task
@@ -36,6 +38,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="NOVA Core", version="1.0.0", lifespan=lifespan)
 app.include_router(intelligence_router)
+app.include_router(proactive_router)
 
 
 @app.middleware("http")
@@ -129,6 +132,7 @@ def ready(session: DB):
     session.execute(text("SELECT 1"))
     session.execute(select(Task.id).limit(1))
     session.execute(select(AgentExecution.id).limit(1))
+    session.execute(select(ActionProposal.id).limit(1))
     count = session.scalar(
         select(func.count()).select_from(Device).where(Device.user_id == DEMO_USER_ID)
     )

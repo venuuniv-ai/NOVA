@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://nova:nova_local_only@localhost:5432/nova"
+    redis_url: str = "redis://localhost:6379/0"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

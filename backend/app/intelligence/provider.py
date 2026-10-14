@@ -28,6 +28,9 @@ class ModelProvider(AIServiceClientBase, ABC):
     async def generate_structured(self, agent: AgentName, payload: AgentInput) -> ProviderResponse:
         raise NotImplementedError
 
+    async def generate_communication(self, payload, attendee) -> ProviderResponse:
+        raise NotImplementedError("Communication capability is not configured.")
+
 
 class FixtureModelProvider(ModelProvider):
     service_id: str = "fixture"
@@ -35,6 +38,23 @@ class FixtureModelProvider(ModelProvider):
     provider_name: str = "FixtureModelProvider"
     model_name: str = "nova-demo-v1"
     capabilities: tuple[str, ...] = ("structured_output", "deterministic", "DEMO_FIXTURE")
+
+    async def generate_communication(self, payload, attendee) -> ProviderResponse:
+        from app.proactive.contracts import ActionIntent, CommunicationOutput
+
+        time = payload.situation.arrival_at.strftime("%I:%M %p").lstrip("0")
+        output = CommunicationOutput(
+            intent=ActionIntent(
+                task_id=payload.task_id,
+                trace_id=payload.trace_id,
+                recipient=attendee.recipient,
+                channel=attendee.channel,
+                content=f"Running a few minutes late. I expect to arrive around {time}.",
+                reason="Predicted travel time exceeds time remaining before meeting.",
+                context_evidence=payload.situation,
+            )
+        )
+        return ProviderResponse(payload_json=output.model_dump_json())
 
     async def generate_structured(self, agent: AgentName, payload: AgentInput) -> ProviderResponse:
         goal = payload.task_goal.casefold()

@@ -1,6 +1,37 @@
 # NOVA Core
 
-**Current implementation: Phase 2 multi-agent core**, built on the verified
+**Current implementation: Phase 3 proactive intelligence and human approval.**
+Command Center receives a synthetic context event at fixture time 13:31:
+Architecture Review at 14:00 requires 35 minutes of travel. NOVA computes
+29 minutes available and six minutes of lateness risk, prepares a draft, and
+requires explicit approval. `/approvals` supports edit, approve, reject, and a
+separate **Execute simulation** step. **No external message is sent.**
+
+Proposals, exact payload-bound approval, simulated receipt, and audit survive
+refreshes, application restarts, and Desktop → Wearable → Mobile handoffs.
+Redis provides bounded deduplication/cooldowns; outages suppress new suggestions.
+All operation remains local and requires $0 paid API/infrastructure spend.
+The clock is deliberately frozen for this demo; expiration is server-enforced
+against the injected clock and tested with an advanced fixture clock.
+
+See [Phase 3 architecture](docs/phase-3-architecture.md),
+[approval ADR](docs/adr/0002-human-approval-boundary.md),
+[Redis ADR](docs/adr/0003-redis-proactive-cooldowns.md), and
+[Phase 3 final audit](docs/phase-3-final-audit.md).
+
+```sh
+docker compose up --build -d --wait
+python3 scripts/acceptance_phase3.py
+# After restarting backend/frontend, use the task ID printed above:
+python3 scripts/acceptance_phase3.py --verify-task TASK_ID
+```
+
+Additional Phase 3 APIs are listed in the architecture document and FastAPI
+OpenAPI at `http://localhost:8000/docs`. All earlier routes and tests remain.
+No real calendar, travel, account, AI inference, or communication is connected.
+Phase 4 has not been started.
+
+**Phase 2 multi-agent core**, built on the verified
 Phase 1 continuity foundation described below. Open **NOVA Intelligence** for
 the persisted agent graph, plugin evidence, planner revisions, and final plan.
 The provider is **FIXTURE / DETERMINISTIC**: it is not an LLM. All calendar,
@@ -315,4 +346,4 @@ Later phases may introduce optional small local models, additional provider
 adapters, real tool integrations, budget-aware routing, clearly labeled replay
 demos, and justified observability infrastructure. Kafka, RAG, VLMs, external
 integrations, cloud deployments, and real hardware integrations remain
-**planned only**. Phase 3 has not been started.
+**planned only**. Phase 3 adds only the documented synthetic proactive/approval flow.

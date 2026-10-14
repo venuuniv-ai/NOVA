@@ -2,6 +2,7 @@ from alembic import context
 from sqlalchemy import create_engine
 
 import app.intelligence.models  # noqa: F401 — register Phase 2 metadata for drift checks
+import app.proactive.models  # noqa: F401 — register Phase 3 metadata
 from app.config import settings
 from app.models import Base
 
