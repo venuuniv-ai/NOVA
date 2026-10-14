@@ -9,13 +9,15 @@ type Observation = { id: string; label: string; description: string; processor: 
 type Perception = { simulation: boolean; id: string; task_id: string; media_id: string; trace_id: string; privacy_class: string; status: string; observations: Observation[]; processors: { processor: string; status: string; model: string; simulation: boolean; latency_ms: number | null }[]; context: { interpretation: string }[]; warnings: string[] };
 type Intent = { media_id: string; idempotency_key: string; privacy_class: string };
 
-export default function PerceptionWorkspace({ task, disabled, canMutate, compact = false }: { task: Task; disabled: boolean; canMutate: () => boolean; compact?: boolean }) {
+export default function PerceptionWorkspace({ task, disabled, canMutate, isCurrentTask, compact = false }: { task: Task; disabled: boolean; canMutate: () => boolean; isCurrentTask?: () => boolean; compact?: boolean }) {
   const [media, setMedia] = useState<Media[]>([]), [runs, setRuns] = useState<Perception[]>([]);
   const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [privacy, setPrivacy] = useState("PERSONAL"), [intent, setIntent] = useState<Intent | null>(null);
   const [notice, setNotice] = useState("");
   const alive = useRef(false), posting = useRef(false), version = useRef(0), reader = useRef<AbortController | null>(null), owner = useRef(canMutate);
   useEffect(() => { owner.current = canMutate; }, [canMutate]);
+  const selection = useRef(isCurrentTask ?? canMutate);
+  useEffect(() => { selection.current = isCurrentTask ?? canMutate; }, [isCurrentTask, canMutate]);
   const storage = `nova.perception-intent.${task.id}`;
   const load = useCallback(async () => {
     const generation = ++version.current; reader.current?.abort(); const controller = new AbortController(); reader.current = controller;
@@ -35,15 +37,15 @@ export default function PerceptionWorkspace({ task, disabled, canMutate, compact
   async function mutate(action: () => Promise<unknown>) {
     if (posting.current || disabled || !owner.current() || !alive.current) return;
     posting.current = true; setBusy(true); setNotice("");
-    try { await action(); if (alive.current && owner.current()) await load(); }
-    catch (cause) { if (alive.current && owner.current()) setError(cause instanceof Error ? cause.message : "Request failed."); }
+    try { await action(); if (alive.current && selection.current()) await load(); }
+    catch (cause) { if (alive.current && selection.current()) setError(cause instanceof Error ? cause.message : "Request failed."); }
     finally { posting.current = false; if (alive.current) setBusy(false); }
   }
   async function perceive() {
     const next = intent ?? { media_id: media[0].id, idempotency_key: crypto.randomUUID(), privacy_class: privacy };
     setIntent(next); try { localStorage.setItem(storage, JSON.stringify(next)); } catch { /* Optional intent. */ }
     const result = await api<Perception>(`/tasks/${task.id}/perception`, { method: "POST", body: JSON.stringify(next) });
-    if (!alive.current || !owner.current()) return;
+    if (!alive.current || !selection.current()) return;
     if (result.task_id !== task.id) throw new Error("Perception ownership mismatch.");
     setIntent(null); try { localStorage.removeItem(storage); } catch { /* Optional intent. */ }
   }
@@ -64,7 +66,7 @@ export default function PerceptionWorkspace({ task, disabled, canMutate, compact
         <img src={`/api/v1/tasks/${task.id}/media/${image.id}/content`} alt={image.source === "FIXTURE_IMAGE" ? "Controlled synthetic meeting scene with sign, laptop, backpack and cup" : "Sanitized uploaded evidence"} />
         {run?.observations.filter(o => o.region).map(o => <span className="actual-region" key={o.id} style={{ left: `${o.region!.x*100}%`, top: `${o.region!.y*100}%`, width: `${o.region!.width*100}%`, height: `${o.region!.height*100}%` }} />)}
       </div><code>MEDIA {image.id}<br />SHA256 {image.sha256}</code></div><div><span className="eyebrow">PERCEPTION PIPELINE</span><div className="pipeline-stage">INGEST → SANITIZE / DONE</div>{run ? run.processors.map(p => <div className="pipeline-stage" key={p.processor}>{p.processor} / {p.status}<small>{p.model} · {p.simulation ? "SIMULATED" : "REAL PROCESSOR"} · {p.latency_ms == null ? "NO INVOCATION" : `${p.latency_ms} ms`}</small></div>) : <p>Processors have not run.</p>}<p>OBSERVATIONS → BOUNDED CONTEXT</p>{run && <><code>TRACE {run.trace_id}</code><p>{run.privacy_class}</p>{run.warnings.map(w => <p key={w}>{w}</p>)}</>}</div></div>}
-      {run && <><div className="observation-grid">{run.observations.map(o => <article className="observation-card" key={o.id}><span className="eyebrow">OBSERVATION / {o.simulation ? "SIMULATED / FIXTURE" : "MODEL EVIDENCE"}</span><h3>{o.label}</h3><p>{o.description}</p><p>{o.processor} / {o.model}</p><p>SCORE {o.score ?? "NONE"} / {o.score_type}</p><code>{o.source} · {o.device}<br />OBSERVATION {o.id}</code>{o.mask_reference && <Link href={`/api/v1/tasks/${task.id}/artifacts/${o.mask_reference}/content`}>View actual segmentation mask</Link>}</article>)}</div><div className="visual-interpretation"><span className="eyebrow">NOVA INTERPRETATION / NOT A VERIFIED FACT</span><p>{run.context.find(c => c.interpretation.includes("consistent"))?.interpretation ?? "Insufficient evidence for a meeting/work interpretation."}</p></div><button className="button ghost" disabled={blocked || !run.context.length} onClick={() => void mutate(async () => { const result = await api<{ task_id: string; proposal: { proposal: { status: string } } | null }>(`/tasks/${task.id}/perception/${run.id}/reason`, { method: "POST", body: JSON.stringify({ idempotency_key: `reason-${run.id}`, propose_action: true }) }); if (alive.current && owner.current() && result.task_id === task.id) setNotice(`Visual context passed to Context/Planner. Proposal: ${result.proposal?.proposal?.status ?? "not justified"}. No external message sent.`); })}>Reason with visual context</button><Link className="button ghost" href={`/models?task=${task.id}`}>Inspect VISION route</Link><Link className="button ghost" href={`/approvals?task=${task.id}`}>Review human approval</Link></>}
+      {run && <><div className="observation-grid">{run.observations.map(o => <article className="observation-card" key={o.id}><span className="eyebrow">OBSERVATION / {o.simulation ? "SIMULATED / FIXTURE" : "MODEL EVIDENCE"}</span><h3>{o.label}</h3><p>{o.description}</p><p>{o.processor} / {o.model}</p><p>SCORE {o.score ?? "NONE"} / {o.score_type}</p><code>{o.source} · {o.device}<br />OBSERVATION {o.id}</code>{o.mask_reference && <Link href={`/api/v1/tasks/${task.id}/artifacts/${o.mask_reference}/content`}>View actual segmentation mask</Link>}</article>)}</div><div className="visual-interpretation"><span className="eyebrow">NOVA INTERPRETATION / NOT A VERIFIED FACT</span><p>{run.context.find(c => c.interpretation.includes("consistent"))?.interpretation ?? "Insufficient evidence for a meeting/work interpretation."}</p></div><button className="button ghost" disabled={blocked || !run.context.length} onClick={() => void mutate(async () => { const result = await api<{ task_id: string; proposal: { proposal: { status: string } } | null }>(`/tasks/${task.id}/perception/${run.id}/reason`, { method: "POST", body: JSON.stringify({ idempotency_key: `reason-${run.id}`, propose_action: true }) }); if (alive.current && selection.current() && result.task_id === task.id) setNotice(`Visual context passed to Context/Planner. Proposal: ${result.proposal?.proposal?.status ?? "not justified"}. No external message sent.`); })}>Reason with visual context</button><Link className="button ghost" href={`/models?task=${task.id}`}>Inspect VISION route</Link><Link className="button ghost" href={`/approvals?task=${task.id}`}>Review human approval</Link></>}
     </>}
   </section>;
 }

@@ -20,6 +20,7 @@ class JsonFormatter(logging.Formatter):
             "task_id",
             "trace_id",
             "agent_name",
+            "memory_id",
             "media_id",
             "processor",
         ):

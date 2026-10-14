@@ -130,6 +130,7 @@ class AgentOrchestrator:
                 available_context=SharedContext(visual_evidence=self.visual_context),
                 trace_id=trace_id,
             )
+        self.runtime.bind_memory(payload.user_id, payload.task_id)
         # The task lock is released before any agent/plugin/provider execution.
         logger.info(
             "execution_started",
@@ -223,6 +224,7 @@ class AgentOrchestrator:
             context.calendar = output.events
         elif isinstance(output, MemoryOutput):
             context.preferences = output.preferences
+            context.memory_hits = output.memory_hits
         next_payload = AgentInput(
             **{
                 **payload.model_dump(),

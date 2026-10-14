@@ -9,8 +9,8 @@ type Scenario = "SIMPLE" | "REASONING" | "PRIVACY" | "BUDGET" | "FAILURE";
 type Intent = { task_id: string; request_id: string; scenario: Scenario };
 type Snapshot = { calls: ModelCall[]; providers: Providers; budget: Budget };
 
-export default function ModelWorkspace({ task, disabled, canMutate, compact = false }: {
-  task: Task; disabled: boolean; canMutate: () => boolean; compact?: boolean;
+export default function ModelWorkspace({ task, disabled, canMutate, isCurrentTask, compact = false }: {
+  task: Task; disabled: boolean; canMutate: () => boolean; isCurrentTask?: () => boolean; compact?: boolean;
 }) {
   const [data, setData] = useState<Snapshot | null>(null);
   const [result, setResult] = useState<ModelResponse | null>(null);
@@ -22,6 +22,8 @@ export default function ModelWorkspace({ task, disabled, canMutate, compact = fa
   const active = useRef<AbortController | null>(null);
   const owner = useRef(canMutate);
   useEffect(() => { owner.current = canMutate; }, [canMutate]);
+  const selection = useRef(isCurrentTask ?? canMutate);
+  useEffect(() => { selection.current = isCurrentTask ?? canMutate; }, [isCurrentTask, canMutate]);
   const storageKey = `nova.model-intent.${task.id}`;
 
   const load = useCallback(async () => {
@@ -60,12 +62,12 @@ export default function ModelWorkspace({ task, disabled, canMutate, compact = fa
     try { localStorage.setItem(storageKey, JSON.stringify(intent)); } catch { /* Optional storage. */ }
     try {
       const next = await api<ModelResponse>("/model-router/evaluate", { method: "POST", body: JSON.stringify(intent) });
-      if (!mounted.current || !owner.current()) return;
+      if (!mounted.current || !selection.current()) return;
       if (next.task_id !== task.id) throw new Error("Model result task identity mismatch.");
       setResult(next); setPending(null);
       try { localStorage.removeItem(storageKey); } catch { /* Optional storage. */ }
       await load();
-    } catch (cause) { if (mounted.current && owner.current()) setError(cause instanceof Error ? cause.message : "Model request was not confirmed."); }
+    } catch (cause) { if (mounted.current && selection.current()) setError(cause instanceof Error ? cause.message : "Model request was not confirmed."); }
     finally { posting.current = false; if (mounted.current) setBusy(false); }
   }
   const decision = result?.decision ?? data?.calls[0]?.decision;

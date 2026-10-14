@@ -2,7 +2,8 @@ name: nova
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: nova-postgres-vector:local
+    build: ./infrastructure/postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nova}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nova_local_only}
@@ -48,6 +49,10 @@ services:
       LOCAL_MODEL_REASONING_CAPABLE: ${LOCAL_MODEL_REASONING_CAPABLE:-false}
       LOCAL_MODEL_TIMEOUT_SECONDS: ${LOCAL_MODEL_TIMEOUT_SECONDS:-8}
       MODEL_CACHE_TTL_SECONDS: ${MODEL_CACHE_TTL_SECONDS:-300}
+      MEMORY_EMBEDDINGS_ENABLED: ${MEMORY_EMBEDDINGS_ENABLED:-false}
+      MEMORY_EMBEDDING_BASE_URL: ${MEMORY_EMBEDDING_BASE_URL:-http://host.docker.internal:11434/v1}
+      MEMORY_EMBEDDING_MODEL: ${MEMORY_EMBEDDING_MODEL:-}
+      MEMORY_EMBEDDING_DIMENSION: ${MEMORY_EMBEDDING_DIMENSION:-32}
       MEDIA_DIRECTORY: /app/media
       VISION_CLIP_ENABLED: ${VISION_CLIP_ENABLED:-false}
       VISION_CLIP_MODEL_PATH: ${VISION_CLIP_MODEL_PATH:-}
@@ -91,7 +96,8 @@ services:
     restart: unless-stopped
 
   test-db:
-    image: postgres:17-alpine
+    image: nova-postgres-vector:local
+    build: ./infrastructure/postgres
     profiles: ["test"]
     environment:
       POSTGRES_USER: nova_test

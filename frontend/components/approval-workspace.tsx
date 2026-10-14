@@ -8,8 +8,8 @@ import type { Audit, Proposal, ProposalDetail, Trigger } from "@/lib/proactive";
 type Intent = { proposalId: string; operation: string; body: { idempotency_key: string; content?: string; recipient?: string } };
 type Snapshot = { proposals: Proposal[]; triggers: Trigger[]; audit: Audit[] };
 
-export default function ApprovalWorkspace({ task, disabled, canMutate, compact = false }: {
-  task: Task; disabled: boolean; canMutate: () => boolean; compact?: boolean;
+export default function ApprovalWorkspace({ task, disabled, canMutate, isCurrentTask, compact = false }: {
+  task: Task; disabled: boolean; canMutate: () => boolean; isCurrentTask?: () => boolean; compact?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [error, setError] = useState("");
@@ -23,6 +23,8 @@ export default function ApprovalWorkspace({ task, disabled, canMutate, compact =
   const active = useRef<AbortController | null>(null);
   const ownership = useRef(canMutate);
   useEffect(() => { ownership.current = canMutate; }, [canMutate]);
+  const selection = useRef(isCurrentTask ?? canMutate);
+  useEffect(() => { selection.current = isCurrentTask ?? canMutate; }, [isCurrentTask, canMutate]);
   const storageKey = `nova.action-intent.${task.id}`;
 
   const load = useCallback(async () => {
@@ -73,7 +75,7 @@ export default function ApprovalWorkspace({ task, disabled, canMutate, compact =
       const result = await api<ProposalDetail>(`/proposals/${intent.proposalId}/${intent.operation}`, {
         method: "POST", body: JSON.stringify(intent.body),
       });
-      if (!alive.current || !ownership.current()) return;
+      if (!alive.current || !selection.current()) return;
       if (result.proposal.task_id !== task.id) throw new Error("Approval task identity mismatch.");
       try { localStorage.removeItem(storageKey); } catch { /* Optional intent storage. */ }
       setPending(null); setEdit(null);
@@ -82,7 +84,7 @@ export default function ApprovalWorkspace({ task, disabled, canMutate, compact =
         : `Decision recorded: ${result.proposal.status}.`);
       await load();
     } catch (cause) {
-      if (alive.current && ownership.current()) setError(cause instanceof Error ? cause.message : "Decision was not confirmed. Retry the original request.");
+      if (alive.current && selection.current()) setError(cause instanceof Error ? cause.message : "Decision was not confirmed. Retry the original request.");
     } finally { posting.current = false; if (alive.current) setBusy(false); }
   }
 
@@ -95,10 +97,10 @@ export default function ApprovalWorkspace({ task, disabled, canMutate, compact =
     try {
       await api("/proactive/evaluate", { method: "POST", body: JSON.stringify({ task_id: task.id,
         event_type: "TIME_TICK", idempotency_key: key }) });
-      if (!alive.current || !ownership.current()) return;
+      if (!alive.current || !selection.current()) return;
       try { localStorage.removeItem(contextKey); } catch { /* Optional intent storage. */ }
       await load();
-    } catch (cause) { if (alive.current && ownership.current()) setError(cause instanceof Error ? cause.message : "Context event was not confirmed."); }
+    } catch (cause) { if (alive.current && selection.current()) setError(cause instanceof Error ? cause.message : "Context event was not confirmed."); }
     finally { posting.current = false; if (alive.current) setBusy(false); }
   }
 
@@ -112,7 +114,7 @@ export default function ApprovalWorkspace({ task, disabled, canMutate, compact =
     <div className="panel-heading"><div><span className="eyebrow">PROACTIVE INTELLIGENCE / HUMAN APPROVAL</span><h2>{compact ? "Context worth your attention." : "Approval Center"}</h2></div><span className="tag">DEMO CONTEXT / FIXTURE CLOCK</span></div>
     {error && <div className="error-notice" role="alert"><p>{error}</p><button className="button ghost" onClick={() => void load()} disabled={busy}>Reload proposals</button></div>}
     {notice && <div className="success-notice" role="status">{notice}</div>}
-    {pending && <div className="phase-notice"><p>{busy ? "Awaiting response. No decision is assumed." : "An action request is unacknowledged. Retry with its original key."}</p><button className="button ghost" disabled={busy || disabled} onClick={() => void mutate(pending)}>Retry original request</button></div>}
+    {pending && <div className="phase-notice"><p>{busy ? "Awaiting response. No decision is assumed." : "An action request is unacknowledged. Retry with its original key."}</p><button className="button ghost" disabled={busy || disabled || !snapshot} onClick={() => void mutate(pending)}>Retry original request</button></div>}
     {!snapshot ? <p role="status">Loading persisted proactive context…</p> : <>
       {surfaced && <div className="risk-summary"><span className="eyebrow">TRAVEL RISK DETECTED · 13:31 FIXTURE TIME</span><h3>{surfaced.situation.meeting.title} · 2:00 PM</h3><div className="risk-numbers"><span><b>{surfaced.situation.minutes_available}m</b> available</span><span><b>{surfaced.situation.travel_minutes}m</b> travel</span><span><b>+{surfaced.situation.lateness_minutes}m</b> risk</span></div><p>You may arrive approximately {surfaced.situation.lateness_minutes} minutes late. NOVA prepared a message proposal for your review.</p><span className="mono">COMMUNICATION AGENT / {surfaced.agent_record?.status} · SEMANTIC KERNEL</span></div>}
       {compact ? <Link className="button primary" href={`/approvals?task=${task.id}`}>Review proposal</Link> : <>

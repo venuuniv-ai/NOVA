@@ -31,13 +31,19 @@ def clean_tasks(migrated_database):
     with engine.begin() as connection:
         connection.execute(
             text(
-                "TRUNCATE media_artifacts, visual_observations, processor_runs, perception_runs, "
+                "TRUNCATE memory_retrievals, memory_mutations, memory_audits, memory_embeddings, "
+                "memory_records, media_artifacts, visual_observations, processor_runs, "
+                "perception_runs, "
                 "media_assets, model_calls, model_budget_days, action_mutations, "
                 "action_executions, approval_decisions, audit_events, "
                 "action_proposals, proactive_triggers, context_events, "
                 "tool_calls, agent_runs, agent_executions, task_events, tasks"
             )
         )
+
+    from app.memory.service import seed_memories
+
+    seed_memories()
 
 
 @pytest.fixture

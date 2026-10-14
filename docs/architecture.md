@@ -1,5 +1,10 @@
 # NOVA architecture
 
+Phase 6 adds user-controlled memory lifecycle, explicit/inferred provenance,
+exact pgvector/full-text/structured retrieval with RRF, and read-only kernel
+MemoryPlugin integration. See [Phase 6 architecture](phase-6-architecture.md).
+Fixture embeddings are default; no cloud or real embedding model is configured.
+
 Phase 5 adds sanitized local image ingestion, independent perception records,
 VISION routing and bounded visual context for the existing agent/approval path.
 See [Phase 5 architecture](phase-5-architecture.md). Fixture is the default;
@@ -11,7 +16,8 @@ scoped signed Redis result caching, and the Model Router UI. See
 [phase-4-architecture.md](phase-4-architecture.md) and routing/budget ADRs.
 No paid provider or model installation is required. Phase 3 is checkpointed at
 `fd656797c60db50c60e78a163595d5ed4017a153`; Phase 4 is checkpointed at
-`5a4cec77641da80f98976ab258f2f18aa011bf0e`. Phase 5 remains uncommitted.
+`5a4cec77641da80f98976ab258f2f18aa011bf0e`; Phase 5 is checkpointed at
+`8c5e2b80a305779be1723ddded750424064ff30e`. Phase 6 remains uncommitted.
 
 Phase 3 adds deterministic proactive triggers, Redis cooldowns, communication
 drafts, payload-bound human decisions, and pure simulated execution. See

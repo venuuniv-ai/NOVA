@@ -17,7 +17,7 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
     const contentType = request.headers.get("Content-Type") ?? "application/json";
     const binary = contentType.startsWith("image/");
     let body: Uint8Array | undefined;
-    if (request.method === "POST") {
+    if (["POST", "DELETE"].includes(request.method)) {
       const stream = request.body?.getReader(); const chunks: Uint8Array[] = []; let size = 0;
       if (stream) while (true) {
         const part = await stream.read(); if (part.done) break;
@@ -58,3 +58,4 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
 
 export const GET = forward;
 export const POST = forward;
+export const DELETE = forward;

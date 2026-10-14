@@ -25,7 +25,7 @@ function displayTime(time: string) {
   return `${hour % 12 || 12}:${minute.toString().padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`;
 }
 
-export default function IntelligenceWorkspace({ task, canMutate, disabled }: { task: Task; canMutate: () => boolean; disabled: boolean }) {
+export default function IntelligenceWorkspace({ task, canMutate, disabled, isCurrentTask }: { task: Task; canMutate: () => boolean; isCurrentTask?: () => boolean; disabled: boolean }) {
   const [data, setData] = useState<Intelligence | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
@@ -91,7 +91,7 @@ export default function IntelligenceWorkspace({ task, canMutate, disabled }: { t
       const result = await api<{ execution: Execution; replayed: boolean }>(`/tasks/${task.id}/run-agents`, {
         method: "POST", body: JSON.stringify({ idempotency_key: key }),
       });
-      if (!mounted.current || !canMutate()) return;
+      if (!mounted.current || !(isCurrentTask ?? canMutate)()) return;
       if (result.execution.task_id !== task.id) throw new Error("Execution task identity did not match.");
       if (result.execution.status !== "RUNNING") {
         try { localStorage.removeItem(storageKey); } catch { /* Optional storage. */ }
@@ -102,7 +102,7 @@ export default function IntelligenceWorkspace({ task, canMutate, disabled }: { t
         : "Deterministic execution completed. No LLM or external personal data was used.");
       await load();
     } catch (cause) {
-      if (mounted.current && canMutate()) setError(cause instanceof ApiError ? cause.message : "Execution could not be confirmed. Retry with the original key.");
+      if (mounted.current && (isCurrentTask ?? canMutate)()) setError(cause instanceof ApiError ? cause.message : "Execution could not be confirmed. Retry with the original key.");
     } finally {
       posting.current = false;
       if (mounted.current) setBusy(false);
@@ -122,7 +122,7 @@ export default function IntelligenceWorkspace({ task, canMutate, disabled }: { t
     <div className="intelligence-heading"><div><span className="eyebrow"><GitBranch size={13} /> INTELLIGENCE / EXECUTION GRAPH</span><h2>Evidence becomes a plan.</h2><p>Specialized agents, bounded plugins, and a shared persistent task.</p></div>
       <button className="button primary" onClick={() => void runIntelligence()} disabled={blocked} aria-label="Run NOVA Intelligence">{busy || running ? <LoaderCircle size={16} className="spin" /> : <Play size={15} />}{busy ? "Awaiting response…" : pendingKey ? "Retry original execution" : running ? "Execution running" : data?.execution ? "Run again" : "Run NOVA Intelligence"}</button>
     </div>
-    <div className="intelligence-disclosure"><Cpu size={16} /><div><strong>{routed ? "ROUTED / APPLICATION POLICY" : "FIXTURE / DETERMINISTIC"}</strong><span>DEMO CONTEXT · Synthetic calendar, preferences, and location. No real personal-data access.</span></div><span className="tag">{routed ? "INSPECT RECORDED PROVIDERS" : "NOT AN LLM"}</span></div>
+    <div className="intelligence-disclosure"><Cpu size={16} /><div><strong>{routed ? "ROUTED / APPLICATION POLICY" : "FIXTURE / DETERMINISTIC"}</strong><span>DEMO CONTEXT · Synthetic calendar/location; user-controlled memory carries its own origin.</span></div><span className="tag">{routed ? "INSPECT RECORDED PROVIDERS" : "NOT AN LLM"}</span></div>
     {routed && <Link className="button ghost" href={`/models?task=${task.id}`}>Recorded model providers</Link>}
     <div className="intelligence-goal"><span className="eyebrow">TASK GOAL</span><p>{task.title}</p><code>{task.id}</code></div>
     {notice && <div className="success-notice" role="status"><Check size={15} />{notice}</div>}

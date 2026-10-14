@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     vision_dino_model_path: str = ""
     vision_sam_enabled: bool = False
     vision_sam_model_path: str = ""
+    memory_embeddings_enabled: bool = False
+    memory_embedding_base_url: str = "http://localhost:11434/v1"
+    memory_embedding_model: str = ""
+    memory_embedding_dimension: int = Field(default=32, ge=1, le=2000)
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

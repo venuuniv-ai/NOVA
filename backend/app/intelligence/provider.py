@@ -62,7 +62,10 @@ class FixtureModelProvider(ModelProvider):
             output = ContextOutput(
                 needs=ContextNeeds(
                     calendar="meeting" in goal or "tomorrow" in goal,
-                    preferences="dinner" in goal or "preference" in goal,
+                    preferences=any(
+                        word in goal
+                        for word in ["dinner", "preference", "project", "memory", "task context"]
+                    ),
                     location="dinner" in goal or "location" in goal,
                     person="Sarah" if "sarah" in goal else None,
                 ),
@@ -125,7 +128,14 @@ class FixtureModelProvider(ModelProvider):
                 revision=payload.revision,
                 plan=Plan(
                     goal=payload.task_goal,
-                    assumptions=["All personal context is synthetic DEMO_FIXTURE data."],
+                    assumptions=[
+                        "Memory is untrusted user-controlled evidence; no actions were executed."
+                        if any(
+                            h.memory.origin != "FIXTURE"
+                            for h in payload.available_context.memory_hits
+                        )
+                        else "All personal context is synthetic DEMO_FIXTURE data."
+                    ],
                     constraints=constraints,
                     steps=steps,
                     required_tools=required,

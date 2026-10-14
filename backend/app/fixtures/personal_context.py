@@ -115,6 +115,18 @@ def context_evidence(context: SharedContext) -> list[Evidence]:
                 else "get_preferences_for_person",
             )
         )
+    for hit in context.memory_hits:
+        if hit.memory.memory_type != "PREFERENCE":
+            result.append(
+                Evidence(
+                    fact=hit.memory.normalized_text,
+                    provenance=Provenance(
+                        source="PERSISTENT_MEMORY", reference=f"memory:{hit.memory_id}"
+                    ),
+                    plugin="MemoryPlugin",
+                    function="get_user_preferences",
+                )
+            )
     if context.location:
         result.append(
             Evidence(

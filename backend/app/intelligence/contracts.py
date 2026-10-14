@@ -4,10 +4,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.memory.contracts import MemoryHit
 from app.perception.evidence import ContextEvidence
 from app.schemas import DeviceType, IdempotencyKey
 
-Source = Literal["DEMO_FIXTURE", "VISUAL_EVIDENCE"]
+Source = Literal["DEMO_FIXTURE", "VISUAL_EVIDENCE", "PERSISTENT_MEMORY"]
 AgentName = Literal["CONTEXT", "PLANNER", "CALENDAR", "MEMORY", "CRITIC"]
 RunStatus = Literal["WAITING", "RUNNING", "DONE", "FAILED", "SKIPPED"]
 
@@ -19,7 +20,7 @@ class Contract(BaseModel):
 class Provenance(Contract):
     source: Source = "DEMO_FIXTURE"
     reference: str
-    memory_type: Literal["explicit_preference"] | None = None
+    memory_type: Literal["explicit_preference", "confirmed_inference"] | None = None
 
 
 class Evidence(Contract):
@@ -61,6 +62,7 @@ class SharedContext(Contract):
     location: LocationContext | None = None
     calendar: list[CalendarEvent] = Field(default_factory=list)
     visual_evidence: list[ContextEvidence] = Field(default_factory=list, max_length=16)
+    memory_hits: list[MemoryHit] = Field(default_factory=list, max_length=20)
     preferences: list[Preference] = Field(default_factory=list)
 
 
@@ -85,6 +87,7 @@ class CalendarOutput(Contract):
 class MemoryOutput(Contract):
     kind: Literal["memory"] = "memory"
     visual_evidence: list[ContextEvidence] = Field(default_factory=list, max_length=16)
+    memory_hits: list[MemoryHit] = Field(default_factory=list, max_length=20)
     preferences: list[Preference]
 
 

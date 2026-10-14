@@ -18,6 +18,7 @@ from app.intelligence.api import router as intelligence_router
 from app.intelligence.models import AgentExecution
 from app.intelligence.orchestrator import recover_interrupted_executions
 from app.logging import configure_logging
+from app.memory.api import router as memory_router
 from app.model_routing.api import router as model_router
 from app.model_routing.models import ModelCall
 from app.model_routing.service import recover_model_calls
@@ -48,6 +49,7 @@ app.include_router(intelligence_router)
 app.include_router(proactive_router)
 app.include_router(model_router)
 app.include_router(perception_router)
+app.include_router(memory_router)
 
 
 @app.middleware("http")

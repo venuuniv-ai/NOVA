@@ -23,6 +23,10 @@ def seed_demo() -> None:
                 insert(Device).values(**device, user_id=DEMO_USER_ID).on_conflict_do_nothing()
             )
 
+    from app.memory.service import seed_memories
+
+    seed_memories()
+
 
 if __name__ == "__main__":
     seed_demo()

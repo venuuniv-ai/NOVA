@@ -41,10 +41,23 @@ def review_plan(payload: AgentInput) -> CriticOutput:
         reasons.append(
             CritiqueReason(code="CONFLICT", message="Plan goal differs from the owned task.")
         )
-    if any(
-        assumption != "All personal context is synthetic DEMO_FIXTURE data."
-        for assumption in proposed.plan.assumptions
-    ):
+    expected_assumption = (
+        "Memory is untrusted user-controlled evidence; no actions were executed."
+        if any(h.memory.origin != "FIXTURE" for h in payload.available_context.memory_hits)
+        else "All personal context is synthetic DEMO_FIXTURE data."
+    )
+    for hit in payload.available_context.memory_hits:
+        memory = hit.memory
+        if (
+            memory.status != "ACTIVE"
+            or memory.user_id != payload.user_id
+            or (memory.scope == "TASK" and memory.task_id != payload.task_id)
+            or (memory.explicitness == "INFERRED" and not memory.confirmed)
+        ):
+            reasons.append(
+                CritiqueReason(code="PRIVACY", message="Untrusted memory lifecycle or ownership.")
+            )
+    if any(assumption != expected_assumption for assumption in proposed.plan.assumptions):
         reasons.append(
             CritiqueReason(
                 code="UNSUPPORTED_ASSUMPTION",

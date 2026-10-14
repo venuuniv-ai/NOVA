@@ -80,6 +80,7 @@ class ContextAgent(Agent):
             device=device,
             location=location,
             visual_evidence=payload.available_context.visual_evidence,
+            memory_hits=payload.available_context.memory_hits,
         )
         return self.result(
             started,
@@ -119,6 +120,7 @@ class MemoryAgent(Agent):
     async def execute(self, payload, runtime, run_id):
         started = datetime.now(UTC)
         preferences = []
+        hits = []
         tools = []
         if payload.needs.person:
             person = await runtime.invoke(
@@ -131,6 +133,7 @@ class MemoryAgent(Agent):
                 MemoryOutput,
             )
             preferences.extend(person.preferences)
+            hits.extend(person.memory_hits)
             tools.append(
                 ToolReference(plugin="MemoryPlugin", function="get_preferences_for_person")
             )
@@ -144,14 +147,16 @@ class MemoryAgent(Agent):
             MemoryOutput,
         )
         preferences.extend(user.preferences)
+        hits.extend(user.memory_hits)
         tools.append(ToolReference(plugin="MemoryPlugin", function="get_user_preferences"))
-        output = MemoryOutput(preferences=preferences)
+        output = MemoryOutput(preferences=preferences, memory_hits=hits)
         return self.result(
             started,
             output,
-            "Retrieved explicit synthetic preferences with provenance.",
+            "Retrieved policy-eligible persistent memory with explicit origin "
+            "and retrieval provenance.",
             tools,
-            context_evidence(SharedContext(preferences=preferences)),
+            context_evidence(SharedContext(preferences=preferences, memory_hits=hits)),
         )
 
 

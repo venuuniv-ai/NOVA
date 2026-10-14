@@ -1,6 +1,32 @@
 # NOVA Core
 
-**Current implementation: Phase 5 multimodal perception and visual context.**
+**Current implementation: Phase 6 controlled memory and personalization.**
+Open `/memory` for explicit memories, pending visual candidates, confirmation,
+correction/supersession/deletion, history and explainable hybrid retrieval.
+Existing fixture preferences are now persisted with FIXTURE origin. User and
+confirmed inferred memories retain distinct provenance in the real kernel agent
+workflow. Memory never authorizes an action or changes human approval.
+
+PostgreSQL 17 is extended locally with pgvector; its existing volume is preserved.
+Exact structured, full-text and vector source ranks combine via RRF k=60.
+Default 32-dimensional fixture embeddings prove infrastructure, **NOT REAL
+SEMANTIC QUALITY**. No real embedding model/endpoint is configured, no model
+weights or ML framework is downloaded, and no cloud embedding is enabled.
+
+```sh
+docker compose up --build -d --wait
+python3 scripts/acceptance_phase6.py
+python3 scripts/acceptance_phase6.py --verify-task TASK_ID
+```
+
+See [Phase 6 architecture](docs/phase-6-architecture.md),
+[lifecycle/provenance ADR](docs/adr/0008-memory-lifecycle-and-provenance.md),
+[retrieval ADR](docs/adr/0009-memory-hybrid-retrieval-and-pgvector.md), and
+[final audit](docs/phase-6-final-audit.md).
+Required external spend is $0; local compute/electricity is not priced.
+Phase 7 has not been started.
+
+**Phase 5 multimodal perception and visual context.**
 Open `/perception` to attach NOVA's controlled wearable frame or upload a JPEG,
 PNG or WEBP. Images are validated, orientation-normalized, stripped of metadata
 and persisted as private sanitized PNGs. Fixture observations are explicit
@@ -24,7 +50,7 @@ See [Phase 5 architecture](docs/phase-5-architecture.md),
 [Phase 5 final audit](docs/phase-5-final-audit.md).
 REAL CLIP / DINOV2 / SAM / VLM are not configured by default. Required external
 API/infrastructure spend is $0; local compute/electricity is not priced.
-Phase 6 has not been started.
+Phase 6 adds controlled persistent memory; Phase 7 has not been started.
 
 **Phase 4 model intelligence and policy routing.**
 Open `/models` for declared providers, health, explainable routes, UTC budget
@@ -64,7 +90,7 @@ fixture-backed. Explicit `run-routed-agents` and `proactive/evaluate-routed`
 paths demonstrate model abstraction while preserving the same approval policy:
 models can draft, never approve or execute. The routed draft stays pending until
 an explicit human decision; simulation still sends no external message.
-Phase 5 adds the perception layer described above; Phase 6 has not been started.
+Phase 5 adds the perception layer described above; Phase 6 adds controlled persistent memory; Phase 7 has not been started.
 
 **Phase 3 proactive intelligence and human approval.**
 Command Center receives a synthetic context event at fixture time 13:31:
@@ -95,7 +121,7 @@ python3 scripts/acceptance_phase3.py --verify-task TASK_ID
 Additional Phase 3 APIs are listed in the architecture document and FastAPI
 OpenAPI at `http://localhost:8000/docs`. All earlier routes and tests remain.
 No real calendar, travel, account, AI inference, or communication is connected.
-Phase 4 adds the model intelligence described above. Phase 5 adds the perception layer described above; Phase 6 has not been started.
+Phase 4 adds the model intelligence described above. Phase 5 adds the perception layer described above; Phase 6 adds controlled persistent memory; Phase 7 has not been started.
 
 **Phase 2 multi-agent core**, built on the verified
 Phase 1 continuity foundation described below. Open **NOVA Intelligence** for

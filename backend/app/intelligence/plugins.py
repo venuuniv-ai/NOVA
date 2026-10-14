@@ -33,26 +33,28 @@ class CalendarPlugin:
     def find_events_related_to_task(self, task_goal: str) -> CalendarOutput:
         return CalendarOutput(
             events=self._repository.calendar("tomorrow")
-            if "meeting" in task_goal.casefold()
+            if "meeting" in task_goal.casefold() or "tomorrow" in task_goal.casefold()
             else []
         )
 
 
 class MemoryPlugin:
     def __init__(self, repository: DemoFixtureRepository):
-        self._repository = repository
+        from app.memory.plugin import MemoryReader
+
+        self.reader = MemoryReader()
 
     @kernel_function(
-        description="Retrieve explicit synthetic preferences for a demo person, with provenance."
+        description="Retrieve eligible owned preferences for a person, retaining true provenance."
     )
     def get_preferences_for_person(self, person_name: str) -> MemoryOutput:
-        return MemoryOutput(preferences=self._repository.preferences(person_name))
+        return self.reader.preferences(person_name)
 
     @kernel_function(
-        description="Retrieve explicit synthetic demo-user preferences, with provenance."
+        description="Retrieve eligible owned user preferences, retaining true provenance."
     )
     def get_user_preferences(self) -> MemoryOutput:
-        return MemoryOutput(preferences=self._repository.preferences("demo_user"))
+        return self.reader.preferences("demo_user")
 
 
 class ContextPlugin:
@@ -124,15 +126,22 @@ class KernelRuntime:
     ):
         self.kernel = Kernel()
         repository = DemoFixtureRepository()
+        self.memory_plugin = MemoryPlugin(repository)
         for name, plugin in [
             ("CalendarPlugin", CalendarPlugin(repository)),
-            ("MemoryPlugin", MemoryPlugin(repository)),
+            ("MemoryPlugin", self.memory_plugin),
             ("ContextPlugin", ContextPlugin(repository)),
         ]:
             self.kernel.add_plugin(plugin, plugin_name=name)
         self.kernel.add_service(provider)
         self.service_id = provider.service_id
         self.recorder = recorder
+
+    def bind_memory(self, user_id, task_id):
+        from app.memory.plugin import MemoryReader
+
+        # Kernel keeps the registered plugin instance; bind its reader to server-owned context.
+        self.memory_plugin.reader = MemoryReader(user_id, task_id)
 
     @property
     def provider(self) -> ModelProvider:

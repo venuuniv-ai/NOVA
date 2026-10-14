@@ -1,0 +1,10 @@
+[
+  {"name":"exact preference","scenario":"active","query":"quiet Italian restaurants","expected":"active"},
+  {"name":"paraphrased request","scenario":"active","query":"I want Italian food without noise","expected":"active"},
+  {"name":"task scope isolation","scenario":"foreign_task","query":"bounded dinner note","expected":null},
+  {"name":"superseded preference","scenario":"superseded","query":"Italian restaurants","expected":"successor"},
+  {"name":"deleted preference","scenario":"deleted","query":"Italian restaurants","expected":null},
+  {"name":"expired preference","scenario":"expired","query":"Italian restaurants","expected":null},
+  {"name":"contradictory candidate","scenario":"contradiction","query":"Italian restaurants","expected":"active"},
+  {"name":"cross-user isolation","scenario":"foreign_user","query":"Italian restaurants","expected":null}
+]
