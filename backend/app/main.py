@@ -22,6 +22,8 @@ from app.model_routing.api import router as model_router
 from app.model_routing.models import ModelCall
 from app.model_routing.service import recover_model_calls
 from app.models import Device, Task, TaskEvent
+from app.perception.api import router as perception_router
+from app.perception.service import recover_perception
 from app.proactive.api import router as proactive_router
 from app.proactive.models import ActionProposal
 from app.schemas import DeviceRead, EventRead, HandoffRequest, HandoffResponse, TaskCreate, TaskRead
@@ -37,6 +39,7 @@ async def lifespan(app: FastAPI):
     configure_logging()
     recover_interrupted_executions()
     recover_model_calls()
+    recover_perception()
     yield
 
 
@@ -44,6 +47,7 @@ app = FastAPI(title="NOVA Core", version="1.0.0", lifespan=lifespan)
 app.include_router(intelligence_router)
 app.include_router(proactive_router)
 app.include_router(model_router)
+app.include_router(perception_router)
 
 
 @app.middleware("http")

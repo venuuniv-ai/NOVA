@@ -76,7 +76,11 @@ class ContextAgent(Agent):
             tools.append(
                 ToolReference(plugin="ContextPlugin", function="get_demo_location_context")
             )
-        output.context = SharedContext(device=device, location=location)
+        output.context = SharedContext(
+            device=device,
+            location=location,
+            visual_evidence=payload.available_context.visual_evidence,
+        )
         return self.result(
             started,
             output,

@@ -28,9 +28,13 @@ logger = logging.getLogger("nova.models")
 
 
 def request_digest(request):
+    excluded = {"request_id", "trace_id"}
+    if request.modality == "TEXT":
+        # Preserve Phase 4 original-key hashes across the Phase 5 schema extension.
+        excluded |= {"media_id", "media_sha256", "vision_simulation_allowed", "vision_fixture"}
     return hashlib.sha256(
         json.dumps(
-            request.model_dump(mode="json", exclude={"request_id", "trace_id"}),
+            request.model_dump(mode="json", exclude=excluded),
             sort_keys=True,
             separators=(",", ":"),
         ).encode()
@@ -260,7 +264,9 @@ class ModelRoutingService:
                     cache_status = "ERROR"
             decision.selected_provider, decision.selected_model = spec.provider, spec.model
             decision.selected_tier = (
-                "FIXTURE"
+                "VISION"
+                if owned.modality == "IMAGE"
+                else "FIXTURE"
                 if spec.kind == "FIXTURE"
                 else "REASONING"
                 if owned.complexity == "REASONING"

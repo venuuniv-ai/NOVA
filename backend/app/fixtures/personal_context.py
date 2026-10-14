@@ -68,6 +68,25 @@ class DemoFixtureRepository:
 def context_evidence(context: SharedContext) -> list[Evidence]:
     """Project typed plugin context into attributable planning constraints."""
     result = []
+    if context.visual_evidence:
+        from app.perception.contracts import ContextEvidence
+
+        for raw in context.visual_evidence:
+            visual = ContextEvidence.model_validate(raw)
+            result.append(
+                Evidence(
+                    fact=(
+                        f"Visual context ({'SIMULATED' if visual.simulation else 'UNTRUSTED'}): "
+                        f"{visual.interpretation}"
+                    ),
+                    provenance=Provenance(
+                        source="VISUAL_EVIDENCE",
+                        reference=f"media:{visual.media_id}/observation:{visual.observation_id}",
+                    ),
+                    plugin="VisualContext",
+                    function="bounded_evidence",
+                )
+            )
     for event in context.calendar:
         result.extend(
             [

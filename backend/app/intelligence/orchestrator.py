@@ -59,7 +59,8 @@ def record_tool(record: ToolRecord) -> None:
 
 
 class AgentOrchestrator:
-    def __init__(self, provider: ModelProvider | None = None):
+    def __init__(self, provider: ModelProvider | None = None, visual_context=None):
+        self.visual_context = [v.model_dump(mode="json") for v in (visual_context or [])]
         self.runtime = KernelRuntime(provider or provider_factory(), record_tool)
         self.agents = {
             agent.name: agent
@@ -126,7 +127,7 @@ class AgentOrchestrator:
                 user_id=task.user_id,
                 current_device=device.type,
                 task_goal=task.title,
-                available_context=SharedContext(),
+                available_context=SharedContext(visual_evidence=self.visual_context),
                 trace_id=trace_id,
             )
         # The task lock is released before any agent/plugin/provider execution.

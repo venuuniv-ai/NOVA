@@ -4,9 +4,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.perception.evidence import ContextEvidence
 from app.schemas import DeviceType, IdempotencyKey
 
-Source = Literal["DEMO_FIXTURE"]
+Source = Literal["DEMO_FIXTURE", "VISUAL_EVIDENCE"]
 AgentName = Literal["CONTEXT", "PLANNER", "CALENDAR", "MEMORY", "CRITIC"]
 RunStatus = Literal["WAITING", "RUNNING", "DONE", "FAILED", "SKIPPED"]
 
@@ -59,6 +60,7 @@ class SharedContext(Contract):
     device: DeviceContext | None = None
     location: LocationContext | None = None
     calendar: list[CalendarEvent] = Field(default_factory=list)
+    visual_evidence: list[ContextEvidence] = Field(default_factory=list, max_length=16)
     preferences: list[Preference] = Field(default_factory=list)
 
 
@@ -82,6 +84,7 @@ class CalendarOutput(Contract):
 
 class MemoryOutput(Contract):
     kind: Literal["memory"] = "memory"
+    visual_evidence: list[ContextEvidence] = Field(default_factory=list, max_length=16)
     preferences: list[Preference]
 
 

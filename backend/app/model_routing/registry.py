@@ -1,6 +1,7 @@
 from app.config import settings
 from app.model_routing.circuit import Circuit
 from app.model_routing.providers import FixtureInferenceProvider, LocalOpenAICompatibleProvider
+from app.perception.vision import FixtureVisionLanguageProvider
 
 
 class ProviderRegistry:
@@ -21,6 +22,7 @@ class ProviderRegistry:
                     else None,
                 ),
                 FixtureInferenceProvider(),
+                FixtureVisionLanguageProvider(),
             ]
         )
         if len({p.spec.provider for p in self.providers}) != len(self.providers):

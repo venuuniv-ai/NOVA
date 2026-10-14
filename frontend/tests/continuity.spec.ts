@@ -75,7 +75,7 @@ test("real backend continuity survives browser refresh and historical retry", as
     "HANDOFF_WEARABLE_TO_MOBILE", "HANDOFF_DESKTOP_TO_WEARABLE", "TASK_CREATED",
   ]);
   await page.getByRole("button", { name: "Retry Desktop → Wearable", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("No duplicate event or transition");
+  await expect(page.locator(".success-notice")).toContainText("No duplicate event or transition");
   await expect(page.getByTestId("current-device")).toHaveText("Mobile");
   const events = await (await request.get(`/api/v1/tasks/${taskId}/events`)).json();
   expect(events).toHaveLength(3);

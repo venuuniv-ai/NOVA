@@ -1,6 +1,32 @@
 # NOVA Core
 
-**Current implementation: Phase 4 model intelligence and policy routing.**
+**Current implementation: Phase 5 multimodal perception and visual context.**
+Open `/perception` to attach NOVA's controlled wearable frame or upload a JPEG,
+PNG or WEBP. Images are validated, orientation-normalized, stripped of metadata
+and persisted as private sanitized PNGs. Fixture observations are explicit
+simulation, not real visual inference. Optional CLIP/DINOv2/SAM adapters load
+existing local model directories only; no ML stack or weights are downloaded.
+
+Visual context reaches the existing Context/Planner/Critic workflow with media,
+processor and simulation provenance. The existing ModelRouter records VISION;
+visual evidence grants no authority, never becomes permanent memory and cannot
+approve or execute a proposal. Phase 3 human approval remains required.
+
+```sh
+docker compose up --build -d --wait
+python3 scripts/acceptance_phase5.py
+python3 scripts/acceptance_phase5.py --verify-task TASK_ID
+```
+
+See [Phase 5 architecture](docs/phase-5-architecture.md),
+[visual responsibility ADR](docs/adr/0006-multimodal-provenance-and-responsibility.md),
+[media storage ADR](docs/adr/0007-media-privacy-and-local-storage.md), and
+[Phase 5 final audit](docs/phase-5-final-audit.md).
+REAL CLIP / DINOV2 / SAM / VLM are not configured by default. Required external
+API/infrastructure spend is $0; local compute/electricity is not priced.
+Phase 6 has not been started.
+
+**Phase 4 model intelligence and policy routing.**
 Open `/models` for declared providers, health, explainable routes, UTC budget
 exposure and actual persisted model-call/cache/usage records. Fixture is the
 complete default and is **NOT AN LLM**. Optional generic local text inference
@@ -38,7 +64,7 @@ fixture-backed. Explicit `run-routed-agents` and `proactive/evaluate-routed`
 paths demonstrate model abstraction while preserving the same approval policy:
 models can draft, never approve or execute. The routed draft stays pending until
 an explicit human decision; simulation still sends no external message.
-Phase 5 has not been started.
+Phase 5 adds the perception layer described above; Phase 6 has not been started.
 
 **Phase 3 proactive intelligence and human approval.**
 Command Center receives a synthetic context event at fixture time 13:31:
@@ -69,7 +95,7 @@ python3 scripts/acceptance_phase3.py --verify-task TASK_ID
 Additional Phase 3 APIs are listed in the architecture document and FastAPI
 OpenAPI at `http://localhost:8000/docs`. All earlier routes and tests remain.
 No real calendar, travel, account, AI inference, or communication is connected.
-Phase 4 adds the model intelligence described above. Phase 5 has not been started.
+Phase 4 adds the model intelligence described above. Phase 5 adds the perception layer described above; Phase 6 has not been started.
 
 **Phase 2 multi-agent core**, built on the verified
 Phase 1 continuity foundation described below. Open **NOVA Intelligence** for

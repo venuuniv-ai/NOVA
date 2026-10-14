@@ -10,15 +10,16 @@ import {
 } from "lucide-react";
 import { api, ApiError, DEMO_TITLE, type Device, type DeviceType, type Handoff,
   type HandoffResult, type Task, type TaskEvent } from "@/lib/api";
+import PerceptionWorkspace from "@/components/perception-workspace";
 import ModelWorkspace from "@/components/model-workspace";
 import ApprovalWorkspace from "@/components/approval-workspace";
 import IntelligenceWorkspace from "@/components/intelligence-workspace";
 
-type View = "command" | "continuity" | "detail" | "intelligence" | "approvals" | "models";
+type View = "command" | "continuity" | "detail" | "intelligence" | "approvals" | "models" | "perception";
 type Snapshot = { selectionId?: string; devices: Device[]; tasks: Task[]; task: Task | null; events: TaskEvent[] };
 const ORDER: DeviceType[] = ["DESKTOP", "WEARABLE", "MOBILE"];
 const ICONS = { DESKTOP: Monitor, WEARABLE: Watch, MOBILE: Smartphone };
-const TITLES = { command: "Command center", continuity: "Device continuity", detail: "Task detail", intelligence: "NOVA Intelligence", approvals: "Approval Center", models: "Model Router" };
+const TITLES = { command: "Command center", continuity: "Device continuity", detail: "Task detail", intelligence: "NOVA Intelligence", approvals: "Approval Center", models: "Model Router", perception: "Perception" };
 
 function timestamp(value: string) {
   return new Date(value).toLocaleString("en-US", {
@@ -284,16 +285,17 @@ export default function NovaWorkspace({ view, taskId }: { view: View; taskId?: s
         <Link className={`nav-item ${view === "intelligence" ? "active" : ""}`} href={`/intelligence${suffix}`}><Cpu size={17} />NOVA Intelligence{view === "intelligence" && <span className="nav-dot" />}</Link>
         <Link className={`nav-item ${view === "approvals" ? "active" : ""}`} href={`/approvals${suffix}`}><Check size={17} />Approval Center</Link>
         <Link className={`nav-item ${view === "models" ? "active" : ""}`} href={`/models${suffix}`}><Layers3 size={17} />Model Router</Link>
+        <Link className={`nav-item ${view === "perception" ? "active" : ""}`} href={`/perception${suffix}`}><Layers3 size={17} />Perception</Link>
         {task ? <Link className={`nav-item ${view === "detail" ? "active" : ""}`} href={`/tasks/${task.id}`}><FileText size={17} />Task detail{view === "detail" && <span className="nav-dot" />}</Link> : <span className="nav-item disabled"><FileText size={17} />Task detail</span>}
       </nav>
       <div className="sidebar-section"><span className="eyebrow">DEVICE CONTEXTS</span>{ORDER.map(type => { const Icon = ICONS[type]; return <div className="context-item" key={type}><Icon size={15} /><span>{type[0] + type.slice(1).toLowerCase()}</span><span className="mono">SIM</span></div>; })}</div>
-      <div className="sidebar-bottom"><div className="local-indicator"><span className="status-dot" />Local-first foundation</div><p>Real persistence.<br />Simulated device contexts.</p><span className="mono version">PHASE 04 / MODEL INTELLIGENCE</span></div>
+      <div className="sidebar-bottom"><div className="local-indicator"><span className="status-dot" />Local-first foundation</div><p>Real persistence.<br />Simulated device contexts.</p><span className="mono version">PHASE 05 / MODEL INTELLIGENCE</span></div>
     </aside>
 
     <main className="main">
       <header className="topbar"><div className="breadcrumb"><span>NOVA</span><ChevronRight size={13} /><span>{TITLES[view]}</span></div><div className={`connection mono ${offline ? "offline" : ""}`}><span className="status-dot" />{offline ? "OFFLINE" : error ? "ERROR" : selectionLoading ? "CONNECTING" : "BACKEND CONNECTED"}</div></header>
       <div className="main-content">
-        <div className="page-heading"><div><div className="eyebrow"><span className="small-line" />NOVA CORE / PHASE 04</div><h1>{TITLES[view]}<span className="accent">.</span></h1><p>{view === "command" ? "Your tasks keep their context. Wherever you continue." : view === "continuity" ? "A continuous thread across three simulated device contexts." : view === "intelligence" ? "A visible execution graph. Explicit evidence. One continuous task." : "One persistent identity. A complete record of every transition."}</p></div>
+        <div className="page-heading"><div><div className="eyebrow"><span className="small-line" />NOVA CORE / PHASE 05</div><h1>{TITLES[view]}<span className="accent">.</span></h1><p>{view === "command" ? "Your tasks keep their context. Wherever you continue." : view === "continuity" ? "A continuous thread across three simulated device contexts." : view === "intelligence" ? "A visible execution graph. Explicit evidence. One continuous task." : "One persistent identity. A complete record of every transition."}</p></div>
           <button ref={createButtonRef} className="button primary" disabled={disabled} onClick={() => { setTitle(DEMO_TITLE); setShowCreate(true); }}><Plus size={16} />New task</button>
         </div>
 
@@ -304,7 +306,7 @@ export default function NovaWorkspace({ view, taskId }: { view: View; taskId?: s
 
         {view !== "detail" && !!loadedSnapshot?.tasks.length && <section className="panel task-selector-panel"><div className="panel-heading"><div><span className="eyebrow">{view === "command" ? "ACTIVE TASKS" : "SELECT A TASK"}</span><h2>{view === "command" ? "Work in progress" : "Task context"}</h2></div><button className="icon-button" onClick={() => void load()} aria-label="Refresh tasks" disabled={busy || selectionLoading}><RefreshCw size={15} /></button></div>
           {view === "command" ? <div className="task-list">{loadedSnapshot.tasks.map(item => <Link key={item.id} className={`task-row ${item.id === selectedTaskId ? "selected" : ""}`} href={`/?task=${item.id}`} onClick={event => { if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) { event.preventDefault(); selectTask(item.id, `/?task=${item.id}`); } }}><span className="task-symbol"><FileText size={18} /></span><div><strong>{item.title}</strong><span className="mono">{item.id.slice(0, 8)} · {loadedSnapshot.devices.find(device => device.id === item.current_device_id)?.name ?? "—"}</span></div><span className="status-tag"><span />{item.status}</span><ChevronRight size={16} /></Link>)}</div>
-            : <div className="task-select"><label className="sr-only" htmlFor="task-select">Select task</label><select id="task-select" value={selectedTaskId ?? ""} onChange={event => selectTask(event.target.value, `/${view === "intelligence" ? "intelligence" : view === "approvals" ? "approvals" : view === "models" ? "models" : "continuity"}?task=${event.target.value}`)}>{loadedSnapshot.tasks.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select><span className="mono muted">ID {selectedTaskId}</span></div>}
+            : <div className="task-select"><label className="sr-only" htmlFor="task-select">Select task</label><select id="task-select" value={selectedTaskId ?? ""} onChange={event => selectTask(event.target.value, `/${view === "intelligence" ? "intelligence" : view === "approvals" ? "approvals" : view === "models" ? "models" : view === "perception" ? "perception" : "continuity"}?task=${event.target.value}`)}>{loadedSnapshot.tasks.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select><span className="mono muted">ID {selectedTaskId}</span></div>}
         </section>}
 
         {selectionLoading && !snapshot && !error ? <div className="loading-state" role="status"><LoaderCircle size={24} className="spin" /><h2>{requestedTaskId ? "Loading selected task" : "Loading persistent state"}</h2><p>{requestedTaskId ? "Task actions are unavailable until this selection is confirmed." : "Connecting to your local NOVA backend…"}</p></div>
@@ -315,6 +317,7 @@ export default function NovaWorkspace({ view, taskId }: { view: View; taskId?: s
 
             {view === "detail" && <section className="panel detail-panel"><div className="panel-heading"><span className="eyebrow">PERSISTENT TASK RECORD</span><span className="status-tag"><span />{task.status}</span></div><h2>{task.title}</h2><p>{task.description || "No description provided."}</p><dl className="task-data"><div className="wide"><dt>TASK ID</dt><dd data-testid="task-id">{task.id}</dd></div><div><dt>ORIGIN DEVICE</dt><dd>{origin?.name}</dd></div><div><dt>CURRENT DEVICE</dt><dd data-testid="current-device">{current?.name}</dd></div><div><dt>CREATED</dt><dd>{timestamp(task.created_at)}</dd></div><div><dt>UPDATED</dt><dd>{timestamp(task.updated_at)}</dd></div></dl></section>}
 
+            {(view === "command" || view === "perception" || view === "detail") && <PerceptionWorkspace key={`vision-${task.id}`} task={task} canMutate={canRunIntelligence} disabled={disabled} compact={view !== "perception"} />}
             {(view === "command" || view === "models") && <ModelWorkspace key={`models-${task.id}`} task={task} canMutate={canRunIntelligence} disabled={disabled} compact={view === "command"} />}
             {(view === "command" || view === "approvals" || view === "detail") && <ApprovalWorkspace key={`actions-${task.id}`} task={task} canMutate={canRunIntelligence} disabled={disabled} compact={view === "command"} />}
             {(view === "intelligence" || view === "detail") && <IntelligenceWorkspace key={task.id} task={task} canMutate={canRunIntelligence} disabled={disabled} />}

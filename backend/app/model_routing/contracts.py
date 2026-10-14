@@ -10,8 +10,8 @@ from app.schemas import DeviceType
 Privacy = Literal["PUBLIC", "INTERNAL", "PERSONAL", "SENSITIVE_LOCAL_ONLY"]
 Complexity = Literal["LOW", "MEDIUM", "HIGH", "REASONING"]
 Tier = Literal["FIXTURE", "SMALL", "FRONTIER", "REASONING", "VISION", "LOCAL"]
-Capability = Literal["TEXT", "STRUCTURED", "REASONING", "REASONING_REPLAY"]
-Purpose = Literal["SUMMARY", "PLANNING", "CRITIQUE", "CONTEXT", "COMMUNICATION"]
+Capability = Literal["TEXT", "STRUCTURED", "REASONING", "REASONING_REPLAY", "VISION"]
+Purpose = Literal["SUMMARY", "PLANNING", "CRITIQUE", "CONTEXT", "COMMUNICATION", "VISUAL_CONTEXT"]
 ErrorCode = Literal[
     "TIMEOUT",
     "UNAVAILABLE",
@@ -34,7 +34,7 @@ class ModelRequest(Contract):
     task_id: UUID
     trace_id: UUID
     user_id: UUID
-    modality: Literal["TEXT"] = "TEXT"
+    modality: Literal["TEXT", "IMAGE"] = "TEXT"
     purpose: Purpose
     structured_input: dict
     required_capabilities: list[Capability] = Field(default_factory=lambda: ["TEXT"], max_length=4)
@@ -44,11 +44,32 @@ class ModelRequest(Contract):
     current_device: DeviceType
     max_output_tokens: int = Field(default=512, ge=16, le=4096)
     mode: Literal["NORMAL", "POLICY_REPLAY"] = "NORMAL"
+    media_id: UUID | None = None
+    media_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    vision_simulation_allowed: bool = False
+    vision_fixture: bool = False
     schema_version: Literal["nova-model-v1"] = "nova-model-v1"
 
     @model_validator(mode="after")
     def bounded_input(self):
         import json
+
+        if self.modality == "IMAGE" or "VISION" in self.required_capabilities:
+            if (
+                self.modality != "IMAGE"
+                or not self.media_id
+                or not self.media_sha256
+                or self.purpose != "VISUAL_CONTEXT"
+                or "VISION" not in self.required_capabilities
+            ):
+                raise ValueError("Vision requests require bound media, purpose and capability.")
+        elif (
+            self.media_id
+            or self.media_sha256
+            or self.vision_fixture
+            or self.vision_simulation_allowed
+        ):
+            raise ValueError("Text requests cannot carry visual binding or permission.")
 
         if len(json.dumps(self.structured_input, ensure_ascii=False).encode()) > 32000:
             raise ValueError("Model input exceeds the bounded context size.")

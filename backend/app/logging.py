@@ -20,6 +20,8 @@ class JsonFormatter(logging.Formatter):
             "task_id",
             "trace_id",
             "agent_name",
+            "media_id",
+            "processor",
         ):
             if hasattr(record, key):
                 payload[key] = getattr(record, key)

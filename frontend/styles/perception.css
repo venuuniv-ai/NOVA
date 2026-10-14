@@ -1,0 +1,18 @@
+.perception-workspace { padding:24px; margin:24px 0; overflow-wrap:anywhere; }
+.visual-disclosure,.visual-interpretation { border:1px solid #38483e; background:#171e1b; padding:18px; line-height:1.7; }
+.perception-controls { display:flex; flex-wrap:wrap; gap:12px; margin:22px 0; align-items:end; }
+.perception-controls label { display:grid; gap:8px; }
+.perception-controls input { max-width:170px; font-size:11px; }
+.perception-controls select { background:#171c20; color:#dbe3df; padding:10px; border:1px solid #39433e; }
+.visual-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; margin:24px 0; }
+.visual-image { position:relative; }
+.visual-image img { display:block; width:100%; height:auto; }
+.actual-region { position:absolute; border:1px solid #92c49c; pointer-events:none; }
+.pipeline-stage { padding:14px; margin:10px 0; border:1px solid #343d38; font-family:monospace; }
+.pipeline-stage small { display:block; margin-top:8px; color:#aab8b0; }
+.observation-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.observation-card { border:1px solid #333d37; padding:18px; margin-bottom:12px; }
+.perception-workspace p { color:#b4beb7; line-height:1.7; }
+.perception-workspace code { font-size:11px; }
+.visual-interpretation { margin:20px 0; }
+@media(max-width:600px) { .perception-workspace { padding:14px; } .visual-grid,.observation-grid { grid-template-columns:1fr; } .perception-workspace .panel-heading { flex-wrap:wrap; } }

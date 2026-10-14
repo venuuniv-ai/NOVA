@@ -50,6 +50,10 @@ class ModelRouter:
                 -p.spec.strength,
             )
         )
+        if owned.modality == "IMAGE":
+            reasons += ["VISION_REQUIRED", "NO_LOCAL_VLM_CONFIGURED", "CLOUD_VISUAL_FORBIDDEN"]
+            if eligible and eligible[0].spec.kind == "FIXTURE":
+                reasons.append("FIXTURE_VISION_REPLAY")
         selected = eligible[0] if eligible else None
         if selected and selected.spec.kind == "FIXTURE":
             reasons += ["FIXTURE_FALLBACK", "FIXTURE_NOT_AN_LLM"]
@@ -63,7 +67,9 @@ class ModelRouter:
             selected_provider=selected.spec.provider if selected else None,
             selected_model=selected.spec.model if selected else None,
             selected_tier=(
-                "FIXTURE"
+                "VISION"
+                if owned.modality == "IMAGE"
+                else "FIXTURE"
                 if selected.spec.kind == "FIXTURE"
                 else "REASONING"
                 if complexity == "REASONING"

@@ -31,7 +31,8 @@ def clean_tasks(migrated_database):
     with engine.begin() as connection:
         connection.execute(
             text(
-                "TRUNCATE model_calls, model_budget_days, action_mutations, "
+                "TRUNCATE media_artifacts, visual_observations, processor_runs, perception_runs, "
+                "media_assets, model_calls, model_budget_days, action_mutations, "
                 "action_executions, approval_decisions, audit_events, "
                 "action_proposals, proactive_triggers, context_events, "
                 "tool_calls, agent_runs, agent_executions, task_events, tasks"

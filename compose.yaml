@@ -48,6 +48,15 @@ services:
       LOCAL_MODEL_REASONING_CAPABLE: ${LOCAL_MODEL_REASONING_CAPABLE:-false}
       LOCAL_MODEL_TIMEOUT_SECONDS: ${LOCAL_MODEL_TIMEOUT_SECONDS:-8}
       MODEL_CACHE_TTL_SECONDS: ${MODEL_CACHE_TTL_SECONDS:-300}
+      MEDIA_DIRECTORY: /app/media
+      VISION_CLIP_ENABLED: ${VISION_CLIP_ENABLED:-false}
+      VISION_CLIP_MODEL_PATH: ${VISION_CLIP_MODEL_PATH:-}
+      VISION_DINO_ENABLED: ${VISION_DINO_ENABLED:-false}
+      VISION_DINO_MODEL_PATH: ${VISION_DINO_MODEL_PATH:-}
+      VISION_SAM_ENABLED: ${VISION_SAM_ENABLED:-false}
+      VISION_SAM_MODEL_PATH: ${VISION_SAM_MODEL_PATH:-}
+    volumes:
+      - media_data:/app/media
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -123,3 +132,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  media_data:

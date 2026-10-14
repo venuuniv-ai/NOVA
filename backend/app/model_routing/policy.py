@@ -9,7 +9,7 @@ def classify(request: ModelRequest) -> tuple[str, str, str]:
     text = str(request.structured_input).casefold()
     privacy_floor = (
         "PERSONAL"
-        if request.purpose in {"COMMUNICATION", "PLANNING", "CRITIQUE", "CONTEXT"}
+        if request.purpose in {"COMMUNICATION", "PLANNING", "CRITIQUE", "CONTEXT", "VISUAL_CONTEXT"}
         or any(word in text for word in ["schedule", "meeting", "preference", "sarah"])
         else "INTERNAL"
     )
@@ -55,6 +55,14 @@ def upper_bound_cost(spec: ProviderSpec, max_output: int) -> Decimal | None:
 
 def eligibility(request, spec, available, allow_personal_cloud=False):
     reasons = []
+    if request.modality == "IMAGE":
+        # Phase 5 production policy has no cloud image transport.
+        if spec.kind == "CLOUD" or spec.priced_external:
+            reasons.append("CLOUD_VISUAL_FORBIDDEN")
+        if spec.kind == "FIXTURE" and (
+            not request.vision_simulation_allowed or not request.vision_fixture
+        ):
+            reasons.append("FIXTURE_SIMULATION_NOT_PERMITTED")
     if not spec.enabled or not available:
         reasons.append("PROVIDER_UNAVAILABLE")
     if spec.kind == "CLOUD" or spec.priced_external:

@@ -14,18 +14,33 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
   try {
+    const contentType = request.headers.get("Content-Type") ?? "application/json";
+    const binary = contentType.startsWith("image/");
+    let body: Uint8Array | undefined;
+    if (request.method === "POST") {
+      const stream = request.body?.getReader(); const chunks: Uint8Array[] = []; let size = 0;
+      if (stream) while (true) {
+        const part = await stream.read(); if (part.done) break;
+        size += part.value.length;
+        if (size > (binary ? 2_000_000 : 1_000_000)) { await stream.cancel(); return Response.json({ error: { code: "REQUEST_SIZE_LIMIT", message: "Request exceeds gateway limit." } }, { status: 413 }); }
+        chunks.push(part.value);
+      }
+      body = new Uint8Array(size); let offset = 0;
+      for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.length; }
+    }
     const response = await fetch(url, {
       method: request.method,
-      headers: { "Content-Type": "application/json", "X-Correlation-ID": correlationId },
-      body: request.method === "POST" ? await request.text() : undefined,
+      headers: { "Content-Type": contentType, "X-Correlation-ID": correlationId, ...(request.headers.get("Idempotency-Key") ? { "Idempotency-Key": request.headers.get("Idempotency-Key")! } : {}) },
+      body: body as BodyInit | undefined,
       cache: "no-store",
       signal: controller.signal,
       redirect: "error",
     });
-    return new Response(await response.text(), {
+    return new Response(await response.arrayBuffer(), {
       status: response.status,
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": response.headers.get("Content-Type") ?? "application/json",
+        "X-Content-Type-Options": "nosniff",
         "Cache-Control": "no-store",
         "X-Correlation-ID": response.headers.get("X-Correlation-ID") ?? correlationId,
         ...(response.headers.get("X-Trace-ID") ? { "X-Trace-ID": response.headers.get("X-Trace-ID")! } : {}),

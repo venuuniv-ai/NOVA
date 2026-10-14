@@ -26,3 +26,22 @@ credentials*.json
 service-account*.json
 *.pem
 *.key
+
+media/
+*.gguf
+*.safetensors
+*.ckpt
+*.pth
+
+# Runtime media, optional model caches and generated dependency outputs.
+media_data/
+.cache/
+.huggingface/
+.ollama/
+.torch/
+huggingface-cache/
+model-cache/
+model-weights/
+venv/
+*.pt
+*.onnx

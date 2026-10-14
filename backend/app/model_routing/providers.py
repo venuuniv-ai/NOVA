@@ -33,6 +33,10 @@ class ProviderFailure(Exception):
 
 
 def output_schema(purpose):
+    if purpose == "VISUAL_CONTEXT":
+        from app.perception.contracts import VisionOutput
+
+        return VisionOutput
     return {
         "SUMMARY": TextOutput,
         "PLANNING": PlanOutput,
