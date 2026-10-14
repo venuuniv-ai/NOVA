@@ -1,6 +1,46 @@
 # NOVA Core
 
-**Current implementation: Phase 3 proactive intelligence and human approval.**
+**Current implementation: Phase 4 model intelligence and policy routing.**
+Open `/models` for declared providers, health, explainable routes, UTC budget
+exposure and actual persisted model-call/cache/usage records. Fixture is the
+complete default and is **NOT AN LLM**. Optional generic local text inference
+requires an explicitly configured, already-running compatibility endpoint.
+No inference software or weights are installed/downloaded automatically.
+
+Routing rechecks privacy, capability, budget and availability before fallback.
+Sensitive-local-only never becomes cloud eligible. PostgreSQL reserves priced
+exposure before invocation and enforces aggregate request and daily limits.
+Redis caches scoped signed exact results with bounded TTL; it does not own
+budgets, tasks, approvals or audit. ModelCall does not retain prompts or output.
+
+Required external API/infrastructure spend is **$0**. Local inference has $0
+external API spend; compute/electricity is not priced. No paid provider is
+configured or implemented. Budget/failure demonstrations use labeled synthetic
+POLICY_REPLAY probes, with no paid transport or fabricated model benchmark.
+No local runtime is configured by default; application/tests do not require one.
+
+See [Phase 4 architecture](docs/phase-4-architecture.md),
+[routing/privacy ADR](docs/adr/0004-model-routing-and-privacy.md),
+[budget/cache ADR](docs/adr/0005-model-budgets-cache-and-accounting.md), and
+[Phase 4 final audit](docs/phase-4-final-audit.md).
+
+```sh
+docker compose up --build -d --wait
+python3 scripts/acceptance_phase4.py
+# After restarting backend/frontend, verify the printed task ID:
+python3 scripts/acceptance_phase4.py --verify-task TASK_ID
+```
+
+Local configuration defaults are in `.env.example`; set `LOCAL_MODEL_ENABLED`,
+`LOCAL_MODEL_BASE_URL` and `LOCAL_MODEL_NAME` only for an already-running local
+runtime/model. No model download is implied. Default Phase 2/3 agent APIs remain
+fixture-backed. Explicit `run-routed-agents` and `proactive/evaluate-routed`
+paths demonstrate model abstraction while preserving the same approval policy:
+models can draft, never approve or execute. The routed draft stays pending until
+an explicit human decision; simulation still sends no external message.
+Phase 5 has not been started.
+
+**Phase 3 proactive intelligence and human approval.**
 Command Center receives a synthetic context event at fixture time 13:31:
 Architecture Review at 14:00 requires 35 minutes of travel. NOVA computes
 29 minutes available and six minutes of lateness risk, prepares a draft, and
@@ -29,7 +69,7 @@ python3 scripts/acceptance_phase3.py --verify-task TASK_ID
 Additional Phase 3 APIs are listed in the architecture document and FastAPI
 OpenAPI at `http://localhost:8000/docs`. All earlier routes and tests remain.
 No real calendar, travel, account, AI inference, or communication is connected.
-Phase 4 has not been started.
+Phase 4 adds the model intelligence described above. Phase 5 has not been started.
 
 **Phase 2 multi-agent core**, built on the verified
 Phase 1 continuity foundation described below. Open **NOVA Intelligence** for

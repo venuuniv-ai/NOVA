@@ -48,12 +48,13 @@ def request_hash(operation: str, payload: dict) -> str:
 
 
 class ProactiveService:
-    def __init__(self, clock=None, cooldown=None, provider=None, executor=None):
+    def __init__(self, clock=None, cooldown=None, provider=None, executor=None, trace_id=None):
         # The public Phase 3 demo explicitly uses a frozen clock, never wall-clock acceptance.
         self.clock = clock or FixtureClock()
         self.cooldown = cooldown or RedisCooldown(settings.redis_url)
         self.provider = provider or FixtureModelProvider()
         self.executor = executor or ActionExecutor()
+        self.trace_id = trace_id
 
     def audit(self, session, event_type, owner, correlation_id, **metadata):
         proposal_id = owner.id if isinstance(owner, ActionProposal) else None
@@ -125,7 +126,7 @@ class ProactiveService:
                 timestamp=self.clock.now(),
                 source="DEMO_FIXTURE",
                 payload=situation.model_dump(mode="json"),
-                trace_id=uuid4(),
+                trace_id=self.trace_id or uuid4(),
                 idempotency_key=payload.idempotency_key,
                 request_hash=digest,
             )

@@ -10,14 +10,15 @@ import {
 } from "lucide-react";
 import { api, ApiError, DEMO_TITLE, type Device, type DeviceType, type Handoff,
   type HandoffResult, type Task, type TaskEvent } from "@/lib/api";
+import ModelWorkspace from "@/components/model-workspace";
 import ApprovalWorkspace from "@/components/approval-workspace";
 import IntelligenceWorkspace from "@/components/intelligence-workspace";
 
-type View = "command" | "continuity" | "detail" | "intelligence" | "approvals";
+type View = "command" | "continuity" | "detail" | "intelligence" | "approvals" | "models";
 type Snapshot = { selectionId?: string; devices: Device[]; tasks: Task[]; task: Task | null; events: TaskEvent[] };
 const ORDER: DeviceType[] = ["DESKTOP", "WEARABLE", "MOBILE"];
 const ICONS = { DESKTOP: Monitor, WEARABLE: Watch, MOBILE: Smartphone };
-const TITLES = { command: "Command center", continuity: "Device continuity", detail: "Task detail", intelligence: "NOVA Intelligence", approvals: "Approval Center" };
+const TITLES = { command: "Command center", continuity: "Device continuity", detail: "Task detail", intelligence: "NOVA Intelligence", approvals: "Approval Center", models: "Model Router" };
 
 function timestamp(value: string) {
   return new Date(value).toLocaleString("en-US", {
@@ -282,27 +283,28 @@ export default function NovaWorkspace({ view, taskId }: { view: View; taskId?: s
         <Link className={`nav-item ${view === "continuity" ? "active" : ""}`} href={`/continuity${suffix}`}><Radio size={17} />Device continuity{view === "continuity" && <span className="nav-dot" />}</Link>
         <Link className={`nav-item ${view === "intelligence" ? "active" : ""}`} href={`/intelligence${suffix}`}><Cpu size={17} />NOVA Intelligence{view === "intelligence" && <span className="nav-dot" />}</Link>
         <Link className={`nav-item ${view === "approvals" ? "active" : ""}`} href={`/approvals${suffix}`}><Check size={17} />Approval Center</Link>
+        <Link className={`nav-item ${view === "models" ? "active" : ""}`} href={`/models${suffix}`}><Layers3 size={17} />Model Router</Link>
         {task ? <Link className={`nav-item ${view === "detail" ? "active" : ""}`} href={`/tasks/${task.id}`}><FileText size={17} />Task detail{view === "detail" && <span className="nav-dot" />}</Link> : <span className="nav-item disabled"><FileText size={17} />Task detail</span>}
       </nav>
       <div className="sidebar-section"><span className="eyebrow">DEVICE CONTEXTS</span>{ORDER.map(type => { const Icon = ICONS[type]; return <div className="context-item" key={type}><Icon size={15} /><span>{type[0] + type.slice(1).toLowerCase()}</span><span className="mono">SIM</span></div>; })}</div>
-      <div className="sidebar-bottom"><div className="local-indicator"><span className="status-dot" />Local-first foundation</div><p>Real persistence.<br />Simulated device contexts.</p><span className="mono version">PHASE 03 / PROACTIVE CONTROL</span></div>
+      <div className="sidebar-bottom"><div className="local-indicator"><span className="status-dot" />Local-first foundation</div><p>Real persistence.<br />Simulated device contexts.</p><span className="mono version">PHASE 04 / MODEL INTELLIGENCE</span></div>
     </aside>
 
     <main className="main">
       <header className="topbar"><div className="breadcrumb"><span>NOVA</span><ChevronRight size={13} /><span>{TITLES[view]}</span></div><div className={`connection mono ${offline ? "offline" : ""}`}><span className="status-dot" />{offline ? "OFFLINE" : error ? "ERROR" : selectionLoading ? "CONNECTING" : "BACKEND CONNECTED"}</div></header>
       <div className="main-content">
-        <div className="page-heading"><div><div className="eyebrow"><span className="small-line" />NOVA CORE / PHASE 03</div><h1>{TITLES[view]}<span className="accent">.</span></h1><p>{view === "command" ? "Your tasks keep their context. Wherever you continue." : view === "continuity" ? "A continuous thread across three simulated device contexts." : view === "intelligence" ? "A visible execution graph. Explicit evidence. One continuous task." : "One persistent identity. A complete record of every transition."}</p></div>
+        <div className="page-heading"><div><div className="eyebrow"><span className="small-line" />NOVA CORE / PHASE 04</div><h1>{TITLES[view]}<span className="accent">.</span></h1><p>{view === "command" ? "Your tasks keep their context. Wherever you continue." : view === "continuity" ? "A continuous thread across three simulated device contexts." : view === "intelligence" ? "A visible execution graph. Explicit evidence. One continuous task." : "One persistent identity. A complete record of every transition."}</p></div>
           <button ref={createButtonRef} className="button primary" disabled={disabled} onClick={() => { setTitle(DEMO_TITLE); setShowCreate(true); }}><Plus size={16} />New task</button>
         </div>
 
-        <div className="phase-notice"><Cpu size={15} /><span>Simulated device contexts · Live backend state · Local PostgreSQL</span><span className="mono">FIXTURE INTELLIGENCE / NO LLM</span></div>
+        <div className="phase-notice"><Cpu size={15} /><span>Simulated device contexts · Live backend state · Local PostgreSQL</span><span className="mono">FIXTURE DEFAULT / OPTIONAL LOCAL</span></div>
 
         {notice && <div className="success-notice" role="status"><Check size={16} />{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notice"><X size={14} /></button></div>}
         {error || !online ? <div className="error-notice" role="alert" aria-label="NOVA error"><WifiOff size={20} /><div><strong>{offline ? "Local services are offline" : "Request failed"}</strong><p>{!online ? "Your browser is offline. Reconnect to load persistent task state." : error?.message}</p>{snapshot && <p>Showing the last loaded data. Refresh before continuing.</p>}{error?.correlationId && <span className="mono">REQUEST {error.correlationId}</span>}</div><button className="button ghost small" onClick={() => void load()} disabled={busy}><RefreshCw size={14} />Retry connection</button></div> : null}
 
         {view !== "detail" && !!loadedSnapshot?.tasks.length && <section className="panel task-selector-panel"><div className="panel-heading"><div><span className="eyebrow">{view === "command" ? "ACTIVE TASKS" : "SELECT A TASK"}</span><h2>{view === "command" ? "Work in progress" : "Task context"}</h2></div><button className="icon-button" onClick={() => void load()} aria-label="Refresh tasks" disabled={busy || selectionLoading}><RefreshCw size={15} /></button></div>
           {view === "command" ? <div className="task-list">{loadedSnapshot.tasks.map(item => <Link key={item.id} className={`task-row ${item.id === selectedTaskId ? "selected" : ""}`} href={`/?task=${item.id}`} onClick={event => { if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) { event.preventDefault(); selectTask(item.id, `/?task=${item.id}`); } }}><span className="task-symbol"><FileText size={18} /></span><div><strong>{item.title}</strong><span className="mono">{item.id.slice(0, 8)} · {loadedSnapshot.devices.find(device => device.id === item.current_device_id)?.name ?? "—"}</span></div><span className="status-tag"><span />{item.status}</span><ChevronRight size={16} /></Link>)}</div>
-            : <div className="task-select"><label className="sr-only" htmlFor="task-select">Select task</label><select id="task-select" value={selectedTaskId ?? ""} onChange={event => selectTask(event.target.value, `/${view === "intelligence" ? "intelligence" : view === "approvals" ? "approvals" : "continuity"}?task=${event.target.value}`)}>{loadedSnapshot.tasks.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select><span className="mono muted">ID {selectedTaskId}</span></div>}
+            : <div className="task-select"><label className="sr-only" htmlFor="task-select">Select task</label><select id="task-select" value={selectedTaskId ?? ""} onChange={event => selectTask(event.target.value, `/${view === "intelligence" ? "intelligence" : view === "approvals" ? "approvals" : view === "models" ? "models" : "continuity"}?task=${event.target.value}`)}>{loadedSnapshot.tasks.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select><span className="mono muted">ID {selectedTaskId}</span></div>}
         </section>}
 
         {selectionLoading && !snapshot && !error ? <div className="loading-state" role="status"><LoaderCircle size={24} className="spin" /><h2>{requestedTaskId ? "Loading selected task" : "Loading persistent state"}</h2><p>{requestedTaskId ? "Task actions are unavailable until this selection is confirmed." : "Connecting to your local NOVA backend…"}</p></div>
@@ -313,13 +315,14 @@ export default function NovaWorkspace({ view, taskId }: { view: View; taskId?: s
 
             {view === "detail" && <section className="panel detail-panel"><div className="panel-heading"><span className="eyebrow">PERSISTENT TASK RECORD</span><span className="status-tag"><span />{task.status}</span></div><h2>{task.title}</h2><p>{task.description || "No description provided."}</p><dl className="task-data"><div className="wide"><dt>TASK ID</dt><dd data-testid="task-id">{task.id}</dd></div><div><dt>ORIGIN DEVICE</dt><dd>{origin?.name}</dd></div><div><dt>CURRENT DEVICE</dt><dd data-testid="current-device">{current?.name}</dd></div><div><dt>CREATED</dt><dd>{timestamp(task.created_at)}</dd></div><div><dt>UPDATED</dt><dd>{timestamp(task.updated_at)}</dd></div></dl></section>}
 
+            {(view === "command" || view === "models") && <ModelWorkspace key={`models-${task.id}`} task={task} canMutate={canRunIntelligence} disabled={disabled} compact={view === "command"} />}
             {(view === "command" || view === "approvals" || view === "detail") && <ApprovalWorkspace key={`actions-${task.id}`} task={task} canMutate={canRunIntelligence} disabled={disabled} compact={view === "command"} />}
             {(view === "intelligence" || view === "detail") && <IntelligenceWorkspace key={task.id} task={task} canMutate={canRunIntelligence} disabled={disabled} />}
             {view === "command" ? <div className="dashboard-grid">{continuity}{eventHistory(false)}</div> : <>{continuity}{eventHistory(true)}</>}
             <div className="identity-strip"><span className="status-dot" /><span className="mono">TASK ID</span><code data-testid="identity-id">{task.id}</code><span className="identity-note">Identity preserved through every handoff</span></div>
           </>}
 
-        <footer className="footer"><span className="mono">NOVA / CROSS-DEVICE CONTINUITY</span><span>Deterministic fixture agents. Simulated personal context and devices.</span></footer>
+        <footer className="footer"><span className="mono">NOVA / CROSS-DEVICE CONTINUITY</span><span>Simulated context and devices. Explicit routing and human approval.</span></footer>
       </div>
     </main>
 

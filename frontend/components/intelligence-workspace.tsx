@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Cpu, GitBranch, LoaderCircle, Play, RefreshCw, ShieldCheck } from "lucide-react";
 import { api, ApiError, type Task } from "@/lib/api";
@@ -108,6 +109,7 @@ export default function IntelligenceWorkspace({ task, canMutate, disabled }: { t
     }
   }
 
+  const routed = data?.execution?.provider === "NOVA ModelRouter";
   const runs = data?.agent_runs ?? [];
   const selected = runs.find(run => run.stage === selectedStage);
   const running = data?.execution?.status === "RUNNING";
@@ -120,7 +122,8 @@ export default function IntelligenceWorkspace({ task, canMutate, disabled }: { t
     <div className="intelligence-heading"><div><span className="eyebrow"><GitBranch size={13} /> INTELLIGENCE / EXECUTION GRAPH</span><h2>Evidence becomes a plan.</h2><p>Specialized agents, bounded plugins, and a shared persistent task.</p></div>
       <button className="button primary" onClick={() => void runIntelligence()} disabled={blocked} aria-label="Run NOVA Intelligence">{busy || running ? <LoaderCircle size={16} className="spin" /> : <Play size={15} />}{busy ? "Awaiting response…" : pendingKey ? "Retry original execution" : running ? "Execution running" : data?.execution ? "Run again" : "Run NOVA Intelligence"}</button>
     </div>
-    <div className="intelligence-disclosure"><Cpu size={16} /><div><strong>FIXTURE / DETERMINISTIC</strong><span>DEMO CONTEXT · Synthetic calendar, preferences, and location. No real personal-data access.</span></div><span className="tag">NOT AN LLM</span></div>
+    <div className="intelligence-disclosure"><Cpu size={16} /><div><strong>{routed ? "ROUTED / APPLICATION POLICY" : "FIXTURE / DETERMINISTIC"}</strong><span>DEMO CONTEXT · Synthetic calendar, preferences, and location. No real personal-data access.</span></div><span className="tag">{routed ? "INSPECT RECORDED PROVIDERS" : "NOT AN LLM"}</span></div>
+    {routed && <Link className="button ghost" href={`/models?task=${task.id}`}>Recorded model providers</Link>}
     <div className="intelligence-goal"><span className="eyebrow">TASK GOAL</span><p>{task.title}</p><code>{task.id}</code></div>
     {notice && <div className="success-notice" role="status"><Check size={15} />{notice}</div>}
     {error && <div className="error-notice" role="alert" aria-label="Intelligence error"><span>{error}</span><button className="button ghost small" onClick={() => void load()}><RefreshCw size={13} />Reload intelligence</button></div>}
@@ -133,7 +136,7 @@ export default function IntelligenceWorkspace({ task, canMutate, disabled }: { t
           <span className="mono node-sequence">{run ? run.sequence.toString().padStart(2, "0") : "—"}</span><span className="agent-node-name">{node.name}</span><span className="agent-node-role">{node.role}</span><span className="agent-status">{status === "RUNNING" && <LoaderCircle size={11} className="spin" />}{status === "DONE" && <Check size={11} />}{status}</span>
         </button>;
       })}<div className="graph-fork" aria-hidden="true" /><div className="graph-join" aria-hidden="true" /></div>
-      <section className="panel agent-inspector" aria-label="Agent execution detail"><div className="panel-heading"><h2>{nodes.find(node => node.stage === selectedStage)?.name ?? selectedStage}</h2><span className="tag">FIXTURE / DETERMINISTIC</span></div>
+      <section className="panel agent-inspector" aria-label="Agent execution detail"><div className="panel-heading"><h2>{nodes.find(node => node.stage === selectedStage)?.name ?? selectedStage}</h2><span className="tag">{routed ? "ROUTED / SEE MODEL HISTORY" : "FIXTURE / DETERMINISTIC"}</span></div>
         {selected ? <div className="inspector-body"><p>{selected.summary || "Waiting for this stage to execute."}</p><div className="inspector-meta"><span>STATUS <b>{selected.status}</b></span><span>DURATION <b>{elapsed(selected)}</b></span><span>PROVIDER <b>{selected.provider}</b></span></div>
           {selected.error && <p className="form-error">Failure: {selected.error}</p>}
           {selected.evidence.length > 0 && <div className="agent-evidence"><span className="eyebrow">EVIDENCE / DEMO CONTEXT</span>{selected.evidence.map((item, index) => <div key={`${item.provenance.reference}-${index}`}><strong>{item.fact}</strong><span className="mono">{item.provenance.source} · {item.provenance.reference}</span></div>)}</div>}

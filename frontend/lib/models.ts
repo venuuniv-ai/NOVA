@@ -1,0 +1,17 @@
+export type Decision = { selected_provider: string | null; selected_model: string | null; selected_tier: string | null;
+  reason_codes: string[]; privacy_class: string; complexity: string; classification_reason: string;
+  primary_preference: string; privacy_decision: string; budget_decision: string; fallback_chain: string[]; device_context: string;
+  candidates: { provider: string; model: string; eligible: boolean; reasons: string[] }[] };
+export type ModelResponse = { request_id: string; task_id: string; trace_id: string; provider: string | null; model: string | null;
+  status: string; route_tier: string | null; output: Record<string, unknown> | null; input_tokens: number | null;
+  output_tokens: number | null; total_tokens: number | null; latency_ms: number | null; usage_source: string;
+  estimated_cost_usd: string | number | null; cost_status: string; cache_status: string; fallback_used: boolean;
+  safe_error: string | null; decision: Decision; mode: string; replayed: boolean };
+export type ModelCall = { id: string; task_id: string; request_id: string; trace_id: string; purpose: string; status: string;
+  decision: Decision; attempts: { provider: string; error?: string; status?: string; invoked: boolean }[];
+  response: ModelResponse | null; started_at: string; safe_error: string | null };
+export type Providers = { scenarios: Record<string, string>; providers: { provider: string; model: string; kind: string; tiers: string[]; capabilities: string[];
+  health: { state: string; last_checked: string | null }; circuit: string; consecutive_failures: number; disclosure: string }[];
+  local_runtime: string; cloud: string };
+export type Budget = { day: string; timezone: string; daily_budget_usd: string | number; per_request_cap_usd: string | number;
+  consumed_usd: string | number; reserved_usd: string | number; remaining_usd: string | number; paid_providers_enabled: boolean; disclosure: string };

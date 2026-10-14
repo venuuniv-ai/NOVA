@@ -1,10 +1,17 @@
 # NOVA architecture
 
+Phase 4 adds typed provider/routing contracts, optional local text compatibility,
+privacy/capability/device policy, authoritative UTC budgets and model-call history,
+scoped signed Redis result caching, and the Model Router UI. See
+[phase-4-architecture.md](phase-4-architecture.md) and routing/budget ADRs.
+No paid provider or model installation is required. Phase 3 is checkpointed at
+`fd656797c60db50c60e78a163595d5ed4017a153`; Phase 4 changes remain unstaged.
+
 Phase 3 adds deterministic proactive triggers, Redis cooldowns, communication
 drafts, payload-bound human decisions, and pure simulated execution. See
 [phase-3-architecture.md](phase-3-architecture.md) and the approval/Redis ADRs.
 PostgreSQL remains authoritative; no real external communication occurs.
-Phase 3 changes are left unstaged for review.
+Phase 3's approval invariants remain unchanged by model selection.
 
 Phase 2 extends the Phase 1 foundation below with persisted multi-agent
 intelligence. See [phase-2-architecture.md](phase-2-architecture.md) for the
