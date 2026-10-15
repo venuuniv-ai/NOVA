@@ -1,0 +1,214 @@
+{
+  "id": "e1b7f8ec-0870-416f-bcea-440a417ffb02",
+  "status": "DONE",
+  "configuration": "BASELINE",
+  "configuration_fingerprint": "8f6c5314f9029388d6d265e1a4fe231e6343eca7c6d0cceff62bdccf5f7cbc72",
+  "reproducibility": {
+    "seed": 0,
+    "judge": "DISABLED",
+    "dataset": "nova-golden",
+    "disclosure": "LOCAL FIXTURE SYSTEM / NOT PRODUCTION RELIABILITY; NOT REAL CV OR SEMANTIC QUALITY",
+    "real_judge": "REAL LLM JUDGE NOT CONFIGURED",
+    "gate_version": "gates-v1",
+    "provider_mode": "FIXTURE_ONLY",
+    "dataset_digest": "c123a0db8eb61f7be23f5f5067b4ca90b258ade94f6217a3e53f6aaba6b0fefb",
+    "grader_version": "checks-v2",
+    "scenario_count": 104,
+    "code_checkpoint": null,
+    "dataset_version": "1.0.0",
+    "fixture_version": "nova-fixtures-v1",
+    "shadow_simulation": false,
+    "source_fingerprint": "c1b9712f3d32612e059cee21d17c2cd87093082e9e745a4130c93f99098eee44"
+  },
+  "summary": {
+    "failed": 0,
+    "passed": 104,
+    "evaluated": 104,
+    "gate_status": "PASS",
+    "critical_violations": 0
+  },
+  "metrics": [
+    {
+      "name": "task_success",
+      "numerator": 104.0,
+      "denominator": 104,
+      "value": 1.0,
+      "methodology": "Passing scenarios / executed scenarios",
+      "unit": "ratio"
+    },
+    {
+      "name": "agent_compliance",
+      "numerator": 10.0,
+      "denominator": 10,
+      "value": 1.0,
+      "methodology": "Passing named checks / applicable named checks; checks-v2",
+      "unit": "ratio"
+    },
+    {
+      "name": "tool_correctness",
+      "numerator": 1.0,
+      "denominator": 1,
+      "value": 1.0,
+      "methodology": "Passing named checks / applicable named checks; checks-v2",
+      "unit": "ratio"
+    },
+    {
+      "name": "tool_argument_exact_match",
+      "numerator": 1.0,
+      "denominator": 1,
+      "value": 1.0,
+      "methodology": "Passing named checks / applicable named checks; checks-v2",
+      "unit": "ratio"
+    },
+    {
+      "name": "memory_compliance",
+      "numerator": 32.0,
+      "denominator": 32,
+      "value": 1.0,
+      "methodology": "Passing named checks / applicable named checks; checks-v2",
+      "unit": "ratio"
+    },
+    {
+      "name": "perception_compliance",
+      "numerator": 11.0,
+      "denominator": 11,
+      "value": 1.0,
+      "methodology": "Passing named checks / applicable named checks; checks-v2",
+      "unit": "ratio"
+    },
+    {
+      "name": "routing_compliance",
+      "numerator": 21.0,
+      "denominator": 21,
+      "value": 1.0,
+      "methodology": "Passing named checks / applicable named checks; checks-v2",
+      "unit": "ratio"
+    },
+    {
+      "name": "proactive_compliance",
+      "numerator": 22.0,
+      "denominator": 22,
+      "value": 1.0,
+      "methodology": "Passing named checks / applicable named checks; checks-v2",
+      "unit": "ratio"
+    },
+    {
+      "name": "policy_compliance",
+      "numerator": 96.0,
+      "denominator": 96,
+      "value": 1.0,
+      "methodology": "Passing named checks / applicable named checks; checks-v2",
+      "unit": "ratio"
+    },
+    {
+      "name": "fixture_latency_p50",
+      "numerator": 49.508,
+      "denominator": 104,
+      "value": 49.508,
+      "methodology": "Fixture wall time incl setup; nearest-rank P95/median P50; min 20",
+      "unit": "ms"
+    },
+    {
+      "name": "fixture_latency_p95",
+      "numerator": 187.963,
+      "denominator": 104,
+      "value": 187.963,
+      "methodology": "Fixture wall time incl setup; nearest-rank P95/median P50; min 20",
+      "unit": "ms"
+    },
+    {
+      "name": "configured_api_cost_usd",
+      "numerator": 0.0,
+      "denominator": 71,
+      "value": 0.0,
+      "methodology": "Phase 4 estimate sum; known calls only; missing costs excluded",
+      "unit": "USD"
+    },
+    {
+      "name": "unknown_cost_calls",
+      "numerator": 3.0,
+      "denominator": 74,
+      "value": 3.0,
+      "methodology": "Recorded Phase 4 accounting categories; no missing price inferred",
+      "unit": "count"
+    },
+    {
+      "name": "unpriced_local_compute_calls",
+      "numerator": 0.0,
+      "denominator": 74,
+      "value": 0.0,
+      "methodology": "Recorded Phase 4 accounting categories; no missing price inferred",
+      "unit": "count"
+    },
+    {
+      "name": "fixture_zero_api_spend_calls",
+      "numerator": 70.0,
+      "denominator": 74,
+      "value": 70.0,
+      "methodology": "Recorded Phase 4 accounting categories; no missing price inferred",
+      "unit": "count"
+    },
+    {
+      "name": "recall_at_5",
+      "numerator": 9.0,
+      "denominator": 9,
+      "value": 1.0,
+      "methodology": "Expected memory IDs; fixture system only",
+      "unit": "ratio"
+    },
+    {
+      "name": "mrr",
+      "numerator": 9.0,
+      "denominator": 9,
+      "value": 1.0,
+      "methodology": "Expected memory IDs; fixture system only",
+      "unit": "ratio"
+    }
+  ],
+  "gates": [
+    {
+      "name": "critical_violations",
+      "status": "PASS",
+      "observed": 0.0,
+      "threshold": 0.0,
+      "methodology": "Any critical privacy/HITL/isolation/provenance invariant failure blocks",
+      "version": "gates-v1"
+    },
+    {
+      "name": "execution_errors",
+      "status": "PASS",
+      "observed": 0.0,
+      "threshold": 0.0,
+      "methodology": "Unexpected scenario execution error blocks",
+      "version": "gates-v1"
+    },
+    {
+      "name": "minimum_task_success",
+      "status": "PASS",
+      "observed": 1.0,
+      "threshold": 0.95,
+      "methodology": "Predeclared fixture task-success floor 0.95; no requirement for perfect quality",
+      "version": "gates-v1"
+    },
+    {
+      "name": "fixture_latency_limit",
+      "status": "PASS",
+      "observed": 187.963,
+      "threshold": 60000.0,
+      "methodology": "Fixture P95 limit 60s; insufficient samples not applicable",
+      "version": "gates-v1"
+    }
+  ],
+  "started_at": "2026-10-15T10:56:25.862433+00:00",
+  "completed_at": "2026-10-15T10:56:33.349796+00:00",
+  "report_scope": "Actual runner FULL baseline; compact measured snapshot, not runtime traces or general AI quality",
+  "category_counts": {
+    "AGENTS": 16,
+    "CONTINUITY": 15,
+    "END_TO_END": 10,
+    "MEMORY": 15,
+    "PERCEPTION": 15,
+    "PROACTIVE": 17,
+    "ROUTING": 16
+  }
+}

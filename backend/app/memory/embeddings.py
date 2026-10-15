@@ -100,6 +100,10 @@ class LocalEmbeddingProvider(EmbeddingProvider):
 
 
 def embedding_provider():
+    from app.database import _evaluation_schema
+
+    if _evaluation_schema.get():
+        return FixtureEmbeddingProvider()
     if settings.memory_embeddings_enabled:
         return LocalEmbeddingProvider(
             True,

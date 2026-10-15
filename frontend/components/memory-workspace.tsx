@@ -33,14 +33,16 @@ export default function MemoryWorkspace({task,disabled,canMutate,isCurrentTask,c
     const poll=setInterval(()=>{if(!document.hidden)void load();},15000);
     return()=>{lifecycle.current=false;++versions.current;reads.current?.abort();clearTimeout(timer);clearInterval(poll);};
   },[load,storage]);
-  async function mutate(next:Intent){
+  async function mutate(request:Intent|(()=>Promise<Intent>)){
     if(posting.current||disabled||!owner.current()||!alive.current)return;
-    posting.current=true;setBusy(true);setIntent(next);
-    try{localStorage.setItem(storage,JSON.stringify(next));}catch{/* Optional intent. */}
+    posting.current=true;setBusy(true);
     try{
+      const next=typeof request==="function"?await request():request;
+      if(!alive.current||!selection.current()||!owner.current())return;
+      setIntent(next);try{localStorage.setItem(storage,JSON.stringify(next));}catch{/* Optional intent. */}
       await api(next.path,{method:next.method,body:JSON.stringify(next.payload)});
       if(!alive.current||!selection.current())return;
-      setIntent(null);setEditing(null);try{localStorage.removeItem(storage);}catch{/* Optional intent. */}await load();
+      setIntent(null);setEditing(current=>current&&next.path.includes(current.id)?null:current);try{localStorage.removeItem(storage);}catch{/* Optional intent. */}await load();
     }catch(cause){if(alive.current&&selection.current())setError(cause instanceof Error?cause.message:"Memory mutation was not confirmed.");}
     finally{posting.current=false;if(alive.current)setBusy(false);}
   }
@@ -55,12 +57,14 @@ export default function MemoryWorkspace({task,disabled,canMutate,isCurrentTask,c
     const results=await api<Audit[]>(`/memory/${memory.id}/history`);if(alive.current&&selection.current()){setHistory(results);setHistoryId(memory.id);}
   }
   async function visualCandidate(){
-    const runs=await api<{task_id:string;observations:{id:string;label:string}[]}[]>(`/tasks/${task.id}/perception`);
-    if(!alive.current||!selection.current())return;
-    const observation=runs.filter(r=>r.task_id===task.id).flatMap(r=>r.observations).find(o=>o.label==="coffee_cup_present");
-    if(!observation){setError("Run the controlled wearable perception scene first.");return;}
-    await change("/memory/candidates/visual",{task_id:task.id,observation_id:observation.id});
+    await mutate(async()=>{
+      const runs=await api<{task_id:string;observations:{id:string;label:string}[]}[]>(`/tasks/${task.id}/perception`);
+      const observation=runs.filter(r=>r.task_id===task.id).flatMap(r=>r.observations).find(o=>o.label==="coffee_cup_present");
+      if(!observation)throw new Error("Run the controlled wearable perception scene first.");
+      return {path:"/memory/candidates/visual",method:"POST",payload:{task_id:task.id,observation_id:observation.id,idempotency_key:crypto.randomUUID()}};
+    });
   }
+
   const blocked=disabled||busy||!ready,visible=records.filter(m=>m.scope==="USER"||m.task_id===task.id),pending=visible.filter(m=>m.status==="PENDING_CONFIRMATION");
   return <section className="panel memory-workspace" data-testid="memory-workspace" data-task-id={task.id}>
     <div className="panel-heading"><div><span className="eyebrow">PERSISTENT MEMORY / USER CONTROL</span><h2>{compact?"Memory context":"Memory Center"}</h2></div><span className="tag">{retrieval?.disclosure??"LOADING MEMORY"}</span></div>

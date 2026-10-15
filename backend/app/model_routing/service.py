@@ -43,8 +43,23 @@ def request_digest(request):
 
 class ModelRoutingService:
     def __init__(self, providers=None, cache=None, budget=None, allow_personal_cloud=None):
+        from app.database import _evaluation_schema
+
+        scope = _evaluation_schema.get()
+        if scope and providers is None:
+            from app.model_routing.providers import FixtureInferenceProvider
+            from app.model_routing.registry import ProviderRegistry
+            from app.perception.vision import FixtureVisionLanguageProvider
+
+            providers = ProviderRegistry(
+                [FixtureInferenceProvider(), FixtureVisionLanguageProvider()]
+            )
         self.registry = providers or registry
-        self.cache = cache or ResultCache(settings.redis_url, settings.model_cache_ttl_seconds)
+        self.cache = cache or ResultCache(
+            settings.redis_url,
+            settings.model_cache_ttl_seconds,
+            prefix=f"nova:evaluation:{scope}" if scope else "nova:model-cache",
+        )
         self.budget = budget or BudgetPolicy(
             settings.daily_ai_budget_usd, settings.max_request_cost_usd
         )

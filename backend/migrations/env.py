@@ -1,6 +1,7 @@
 from alembic import context
 from sqlalchemy import create_engine
 
+import app.evaluation.models  # noqa: F401 — Phase 7 metadata
 import app.intelligence.models  # noqa: F401 — register Phase 2 metadata for drift checks
 import app.memory.models  # noqa: F401 — Phase 6 metadata
 import app.model_routing.models  # noqa: F401 — register Phase 4 metadata

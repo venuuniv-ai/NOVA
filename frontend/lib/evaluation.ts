@@ -1,0 +1,6 @@
+export type Metric = { name:string; numerator:number|null; denominator:number; value:number|null; methodology:string; unit:string };
+export type Grade = { name:string; grader:string; severity:string; metric:string; passed:boolean; expected:unknown; observed:unknown; reason:string };
+export type Scenario = { scenario_id:string; version:number; category:string; status:string; elapsed_ms:number; observation:Record<string,unknown>; graders:Grade[]; judge:unknown };
+export type EvalRun = { id:string; status:string; suite:string; configuration:string; configuration_fingerprint:string; reproducibility:{dataset:string;dataset_version:string;scenario_count:number;disclosure:string}; summary:{evaluated?:number;passed?:number;failed?:number;critical_violations?:number;gate_status?:string}; metrics:Metric[]; gates:{name:string;status:string;observed:number|null;threshold:number;methodology:string}[]; scenarios:Scenario[]; safe_error:string|null };
+export type Dataset = {name:string;version:string;scenarios:number;suites:Record<string,number>;disclosure:string};
+export type Experiment = {id:string;definition:{name:string;mode:string;candidate_percentage:number};assignments:{subject:string;bucket:number;variant:string}[];results:{id:string;status:string;baseline_id:string|null;candidate_id:string|null;comparison:Record<string,unknown>}[]};

@@ -48,13 +48,16 @@ def request_hash(operation: str, payload: dict) -> str:
 
 
 class ProactiveService:
-    def __init__(self, clock=None, cooldown=None, provider=None, executor=None, trace_id=None):
+    def __init__(
+        self, clock=None, cooldown=None, provider=None, executor=None, trace_id=None, threshold=2
+    ):
         # The public Phase 3 demo explicitly uses a frozen clock, never wall-clock acceptance.
         self.clock = clock or FixtureClock()
         self.cooldown = cooldown or RedisCooldown(settings.redis_url)
         self.provider = provider or FixtureModelProvider()
         self.executor = executor or ActionExecutor()
         self.trace_id = trace_id
+        self.threshold = threshold
 
     def audit(self, session, event_type, owner, correlation_id, **metadata):
         proposal_id = owner.id if isinstance(owner, ActionProposal) else None
@@ -116,7 +119,7 @@ class ProactiveService:
                         select(ProactiveTrigger).where(ProactiveTrigger.event_id == prior.id)
                     ),
                 )
-            engine = ProactiveTriggerEngine(self.clock)
+            engine = ProactiveTriggerEngine(self.clock, self.threshold)
             situation, reason = engine.analyze(demo_meeting(self.clock, str(task.id)))
             fingerprint = engine.fingerprint(task.user_id, situation)
             event = ContextEvent(
@@ -318,6 +321,14 @@ class ProactiveService:
         session.flush()
 
     def mutate(self, proposal_id, operation, payload, correlation_id):
+        from app.database import _evaluation_schema, _evaluation_shadow
+
+        if (
+            _evaluation_schema.get()
+            and _evaluation_shadow.get()
+            and operation in {"approve", "execute"}
+        ):
+            fail(409, "SHADOW_ACTION_BLOCKED", "Shadow simulations cannot approve or execute.")
         digest = request_hash(
             operation, payload.model_dump(mode="json", exclude={"idempotency_key"})
         )

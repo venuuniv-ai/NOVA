@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_session
+from app.evaluation.api import router as evaluation_router
 from app.intelligence.api import router as intelligence_router
 from app.intelligence.models import AgentExecution
 from app.intelligence.orchestrator import recover_interrupted_executions
@@ -41,6 +42,10 @@ async def lifespan(app: FastAPI):
     recover_interrupted_executions()
     recover_model_calls()
     recover_perception()
+    from app.evaluation.runner import recover_evaluations, recover_experiments
+
+    recover_evaluations()
+    recover_experiments()
     yield
 
 
@@ -50,6 +55,7 @@ app.include_router(proactive_router)
 app.include_router(model_router)
 app.include_router(perception_router)
 app.include_router(memory_router)
+app.include_router(evaluation_router)
 
 
 @app.middleware("http")

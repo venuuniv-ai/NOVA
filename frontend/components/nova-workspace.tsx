@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { api, ApiError, DEMO_TITLE, type Device, type DeviceType, type Handoff,
   type HandoffResult, type Task, type TaskEvent } from "@/lib/api";
+import { EvaluationSummary } from "@/components/evaluation-lab";
 import MemoryWorkspace from "@/components/memory-workspace";
 import PerceptionWorkspace from "@/components/perception-workspace";
 import ModelWorkspace from "@/components/model-workspace";
@@ -293,21 +294,23 @@ export default function NovaWorkspace({ view, taskId }: { view: View; taskId?: s
         <Link className={`nav-item ${view === "models" ? "active" : ""}`} href={`/models${suffix}`}><Layers3 size={17} />Model Router</Link>
         <Link className={`nav-item ${view === "perception" ? "active" : ""}`} href={`/perception${suffix}`}><Layers3 size={17} />Perception</Link>
         <Link className={`nav-item ${view === "memory" ? "active" : ""}`} href={`/memory${suffix}`}><Layers3 size={17} />Memory Center</Link>
+        <Link className="nav-item" href="/evals"><Layers3 size={17} />Evaluation Lab</Link>
         {task ? <Link className={`nav-item ${view === "detail" ? "active" : ""}`} href={`/tasks/${task.id}`}><FileText size={17} />Task detail{view === "detail" && <span className="nav-dot" />}</Link> : <span className="nav-item disabled"><FileText size={17} />Task detail</span>}
       </nav>
       <div className="sidebar-section"><span className="eyebrow">DEVICE CONTEXTS</span>{ORDER.map(type => { const Icon = ICONS[type]; return <div className="context-item" key={type}><Icon size={15} /><span>{type[0] + type.slice(1).toLowerCase()}</span><span className="mono">SIM</span></div>; })}</div>
-      <div className="sidebar-bottom"><div className="local-indicator"><span className="status-dot" />Local-first foundation</div><p>Real persistence.<br />Simulated device contexts.</p><span className="mono version">PHASE 06 / MODEL INTELLIGENCE</span></div>
+      <div className="sidebar-bottom"><div className="local-indicator"><span className="status-dot" />Local-first foundation</div><p>Real persistence.<br />Simulated device contexts.</p><span className="mono version">PHASE 07 / MODEL INTELLIGENCE</span></div>
     </aside>
 
     <main className="main">
       <header className="topbar"><div className="breadcrumb"><span>NOVA</span><ChevronRight size={13} /><span>{TITLES[view]}</span></div><div className={`connection mono ${offline ? "offline" : ""}`}><span className="status-dot" />{offline ? "OFFLINE" : error ? "ERROR" : selectionLoading ? "CONNECTING" : "BACKEND CONNECTED"}</div></header>
       <div className="main-content">
-        <div className="page-heading"><div><div className="eyebrow"><span className="small-line" />NOVA CORE / PHASE 06</div><h1>{TITLES[view]}<span className="accent">.</span></h1><p>{view === "command" ? "Your tasks keep their context. Wherever you continue." : view === "continuity" ? "A continuous thread across three simulated device contexts." : view === "intelligence" ? "A visible execution graph. Explicit evidence. One continuous task." : "One persistent identity. A complete record of every transition."}</p></div>
+        <div className="page-heading"><div><div className="eyebrow"><span className="small-line" />NOVA CORE / PHASE 07</div><h1>{TITLES[view]}<span className="accent">.</span></h1><p>{view === "command" ? "Your tasks keep their context. Wherever you continue." : view === "continuity" ? "A continuous thread across three simulated device contexts." : view === "intelligence" ? "A visible execution graph. Explicit evidence. One continuous task." : "One persistent identity. A complete record of every transition."}</p></div>
           <button ref={createButtonRef} className="button primary" disabled={disabled} onClick={() => { setTitle(DEMO_TITLE); setShowCreate(true); }}><Plus size={16} />New task</button>
         </div>
 
         <div className="phase-notice"><Cpu size={15} /><span>Simulated device contexts · Live backend state · Local PostgreSQL</span><span className="mono">FIXTURE DEFAULT / OPTIONAL LOCAL</span></div>
 
+        {view === "command" && <EvaluationSummary />}
         {notice && <div className="success-notice" role="status"><Check size={16} />{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notice"><X size={14} /></button></div>}
         {error || !online ? <div className="error-notice" role="alert" aria-label="NOVA error"><WifiOff size={20} /><div><strong>{offline ? "Local services are offline" : "Request failed"}</strong><p>{!online ? "Your browser is offline. Reconnect to load persistent task state." : error?.message}</p>{snapshot && <p>Showing the last loaded data. Refresh before continuing.</p>}{error?.correlationId && <span className="mono">REQUEST {error.correlationId}</span>}</div><button className="button ghost small" onClick={() => void load()} disabled={busy}><RefreshCw size={14} />Retry connection</button></div> : null}
 

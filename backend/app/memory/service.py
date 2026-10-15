@@ -542,7 +542,7 @@ class MemoryService:
                     ).all()
                 )
                 vector = self.embed(query.query, query.privacy_ceiling)
-                distance = MemoryEmbedding.embedding.op("<=>")(vector.vector)
+                distance = MemoryEmbedding.embedding.op("OPERATOR(public.<=>)")(vector.vector)
                 nearest = session.execute(
                     select(MemoryEmbedding.memory_id, distance.label("distance"))
                     .where(

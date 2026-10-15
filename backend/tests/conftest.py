@@ -31,7 +31,9 @@ def clean_tasks(migrated_database):
     with engine.begin() as connection:
         connection.execute(
             text(
-                "TRUNCATE memory_retrievals, memory_mutations, memory_audits, memory_embeddings, "
+                "TRUNCATE experiment_results, experiment_assignments, experiment_definitions, "
+                "evaluation_scenario_results, evaluation_runs, evaluation_datasets, "
+                "memory_retrievals, memory_mutations, memory_audits, memory_embeddings, "
                 "memory_records, media_artifacts, visual_observations, processor_runs, "
                 "perception_runs, "
                 "media_assets, model_calls, model_budget_days, action_mutations, "

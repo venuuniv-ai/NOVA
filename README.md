@@ -1,6 +1,27 @@
 # NOVA Core
 
-**Current implementation: Phase 6 controlled memory and personalization.**
+**Current implementation: Phase 7 evaluation and experimentation.**
+Open `/evals` for the versioned 104-scenario golden dataset, SMOKE/REGRESSION/FULL
+runs, actual evidence and grader failures, explicit metric denominators,
+regression gates, and paired offline A/B, SHADOW and CANARY simulations.
+Fixture evaluation measures the documented local system, not production
+reliability, real CV accuracy, real semantic quality or real-user usefulness.
+REAL LLM JUDGE NOT CONFIGURED. Real embeddings/CLIP/DINOv2/SAM/VLM remain
+unconfigured and unexercised. Required external spend remains $0.
+
+```sh
+docker compose up --build -d --wait
+python3 scripts/acceptance_phase7.py
+docker compose exec backend python -m app.evaluation.cli --suite REGRESSION
+```
+
+See [Phase 7 architecture](docs/phase-7-architecture.md) and
+[final audit](docs/phase-7-final-audit.md). The deterministic CI command exits
+nonzero on failed gates. The cautious-threshold candidate can lose useful fixture
+suggestions; results are measured and reported without assuming a candidate win.
+Phase 8 has not been started.
+
+**Phase 6 controlled memory and personalization.**
 Open `/memory` for explicit memories, pending visual candidates, confirmation,
 correction/supersession/deletion, history and explainable hybrid retrieval.
 Existing fixture preferences are now persisted with FIXTURE origin. User and
@@ -24,7 +45,7 @@ See [Phase 6 architecture](docs/phase-6-architecture.md),
 [retrieval ADR](docs/adr/0009-memory-hybrid-retrieval-and-pgvector.md), and
 [final audit](docs/phase-6-final-audit.md).
 Required external spend is $0; local compute/electricity is not priced.
-Phase 7 has not been started.
+Phase 7 adds fixture evaluation; Phase 8 has not been started.
 
 **Phase 5 multimodal perception and visual context.**
 Open `/perception` to attach NOVA's controlled wearable frame or upload a JPEG,
@@ -50,7 +71,7 @@ See [Phase 5 architecture](docs/phase-5-architecture.md),
 [Phase 5 final audit](docs/phase-5-final-audit.md).
 REAL CLIP / DINOV2 / SAM / VLM are not configured by default. Required external
 API/infrastructure spend is $0; local compute/electricity is not priced.
-Phase 6 adds controlled persistent memory; Phase 7 has not been started.
+Phase 6 adds controlled persistent memory; Phase 7 adds fixture evaluation; Phase 8 has not been started.
 
 **Phase 4 model intelligence and policy routing.**
 Open `/models` for declared providers, health, explainable routes, UTC budget
@@ -90,7 +111,7 @@ fixture-backed. Explicit `run-routed-agents` and `proactive/evaluate-routed`
 paths demonstrate model abstraction while preserving the same approval policy:
 models can draft, never approve or execute. The routed draft stays pending until
 an explicit human decision; simulation still sends no external message.
-Phase 5 adds the perception layer described above; Phase 6 adds controlled persistent memory; Phase 7 has not been started.
+Phase 5 adds the perception layer described above; Phase 6 adds controlled persistent memory; Phase 7 adds fixture evaluation; Phase 8 has not been started.
 
 **Phase 3 proactive intelligence and human approval.**
 Command Center receives a synthetic context event at fixture time 13:31:
@@ -121,7 +142,7 @@ python3 scripts/acceptance_phase3.py --verify-task TASK_ID
 Additional Phase 3 APIs are listed in the architecture document and FastAPI
 OpenAPI at `http://localhost:8000/docs`. All earlier routes and tests remain.
 No real calendar, travel, account, AI inference, or communication is connected.
-Phase 4 adds the model intelligence described above. Phase 5 adds the perception layer described above; Phase 6 adds controlled persistent memory; Phase 7 has not been started.
+Phase 4 adds the model intelligence described above. Phase 5 adds the perception layer described above; Phase 6 adds controlled persistent memory; Phase 7 adds fixture evaluation; Phase 8 has not been started.
 
 **Phase 2 multi-agent core**, built on the verified
 Phase 1 continuity foundation described below. Open **NOVA Intelligence** for
