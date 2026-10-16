@@ -1,0 +1,38 @@
+# Optional real local OIDC authorization-code + PKCE provider. No public/cloud service.
+services:
+  backend:
+    networks: [application, state, telemetry, backend_host, identity]
+    environment:
+      AUTH_MODE: oidc
+      OIDC_ISSUER: http://localhost:8180/realms/nova
+      OIDC_JWKS_URL: http://keycloak:8080/realms/nova/protocol/openid-connect/certs
+  frontend:
+    networks: [edge, identity]
+    environment:
+      OIDC_PUBLIC_ISSUER: http://localhost:8180/realms/nova
+      OIDC_INTERNAL_ISSUER: http://keycloak:8080/realms/nova
+      OIDC_REDIRECT_URI: http://localhost:3000/auth/oidc/callback
+  keycloak:
+    networks: [identity, identity_host]
+    image: quay.io/keycloak/keycloak:26.4.2
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_HOSTNAME: http://localhost:8180
+      KC_HTTP_ENABLED: "true"
+      JAVA_OPTS_KC_HEAP: -Xms128m -Xmx512m
+    entrypoint: [/bin/sh, -c]
+    command:
+      - |
+        umask 077
+        if [ ! -f /opt/keycloak/data/operator.password ]; then
+          od -An -N32 -tx1 /dev/urandom | tr -d ' \n' > /opt/keycloak/data/operator.password
+        fi
+        export KC_BOOTSTRAP_ADMIN_PASSWORD=$$(cat /opt/keycloak/data/operator.password)
+        exec /opt/keycloak/bin/kc.sh start-dev --import-realm
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./infrastructure/oidc/realm.json:/opt/keycloak/data/import/nova.json:ro
+    ports: ["127.0.0.1:8180:8080"]
+    restart: unless-stopped
+volumes:
+  keycloak_data:

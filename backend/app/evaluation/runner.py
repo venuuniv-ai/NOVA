@@ -23,7 +23,7 @@ from app.evaluation.models import (
 )
 from app.memory.service import digest
 from app.models import User
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 from app.service import fail
 
 logger = logging.getLogger("nova.evaluation")
@@ -76,8 +76,8 @@ def source_fingerprint():
 
 
 class EvaluationRunner:
-    def __init__(self, user_id=DEMO_USER_ID, experiment_result_id=None):
-        self.user_id = user_id
+    def __init__(self, user_id=None, experiment_result_id=None):
+        self.user_id = user_id or current_user_id()
         self.experiment_result_id = experiment_result_id
 
     def claim(self, payload: RunInput, shadow=False):

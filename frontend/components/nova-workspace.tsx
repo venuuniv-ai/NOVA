@@ -295,16 +295,18 @@ export default function NovaWorkspace({ view, taskId }: { view: View; taskId?: s
         <Link className={`nav-item ${view === "perception" ? "active" : ""}`} href={`/perception${suffix}`}><Layers3 size={17} />Perception</Link>
         <Link className={`nav-item ${view === "memory" ? "active" : ""}`} href={`/memory${suffix}`}><Layers3 size={17} />Memory Center</Link>
         <Link className="nav-item" href="/evals"><Layers3 size={17} />Evaluation Lab</Link>
+        <Link className="nav-item" href="/operations"><Layers3 size={17} />Local Operations</Link>
+        <Link className="nav-item" href="/auth"><Layers3 size={17} />Authentication</Link>
         {task ? <Link className={`nav-item ${view === "detail" ? "active" : ""}`} href={`/tasks/${task.id}`}><FileText size={17} />Task detail{view === "detail" && <span className="nav-dot" />}</Link> : <span className="nav-item disabled"><FileText size={17} />Task detail</span>}
       </nav>
       <div className="sidebar-section"><span className="eyebrow">DEVICE CONTEXTS</span>{ORDER.map(type => { const Icon = ICONS[type]; return <div className="context-item" key={type}><Icon size={15} /><span>{type[0] + type.slice(1).toLowerCase()}</span><span className="mono">SIM</span></div>; })}</div>
-      <div className="sidebar-bottom"><div className="local-indicator"><span className="status-dot" />Local-first foundation</div><p>Real persistence.<br />Simulated device contexts.</p><span className="mono version">PHASE 07 / MODEL INTELLIGENCE</span></div>
+      <div className="sidebar-bottom"><div className="local-indicator"><span className="status-dot" />Local-first foundation</div><p>Real persistence.<br />Simulated device contexts.</p><span className="mono version">PHASE 08 / MODEL INTELLIGENCE</span></div>
     </aside>
 
     <main className="main">
       <header className="topbar"><div className="breadcrumb"><span>NOVA</span><ChevronRight size={13} /><span>{TITLES[view]}</span></div><div className={`connection mono ${offline ? "offline" : ""}`}><span className="status-dot" />{offline ? "OFFLINE" : error ? "ERROR" : selectionLoading ? "CONNECTING" : "BACKEND CONNECTED"}</div></header>
       <div className="main-content">
-        <div className="page-heading"><div><div className="eyebrow"><span className="small-line" />NOVA CORE / PHASE 07</div><h1>{TITLES[view]}<span className="accent">.</span></h1><p>{view === "command" ? "Your tasks keep their context. Wherever you continue." : view === "continuity" ? "A continuous thread across three simulated device contexts." : view === "intelligence" ? "A visible execution graph. Explicit evidence. One continuous task." : "One persistent identity. A complete record of every transition."}</p></div>
+        <div className="page-heading"><div><div className="eyebrow"><span className="small-line" />NOVA CORE / PHASE 08</div><h1>{TITLES[view]}<span className="accent">.</span></h1><p>{view === "command" ? "Your tasks keep their context. Wherever you continue." : view === "continuity" ? "A continuous thread across three simulated device contexts." : view === "intelligence" ? "A visible execution graph. Explicit evidence. One continuous task." : "One persistent identity. A complete record of every transition."}</p></div>
           <button ref={createButtonRef} className="button primary" disabled={disabled} onClick={() => { setTitle(DEMO_TITLE); setShowCreate(true); }}><Plus size={16} />New task</button>
         </div>
 

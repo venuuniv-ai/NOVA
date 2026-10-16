@@ -41,6 +41,7 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-nova}:${POSTGRES_PASSWORD:-nova_local_only}@postgres:5432/${POSTGRES_DB:-nova}
       REDIS_URL: redis://redis:6379/0
       ENABLE_EXTERNAL_MODEL_TESTS: "false"
+      AUTH_MODE: demo
       DAILY_AI_BUDGET_USD: ${DAILY_AI_BUDGET_USD:-0}
       MAX_REQUEST_COST_USD: ${MAX_REQUEST_COST_USD:-0}
       LOCAL_MODEL_ENABLED: ${LOCAL_MODEL_ENABLED:-false}
@@ -129,6 +130,7 @@ services:
       REDIS_URL: redis://test-redis:6379/0
       DATABASE_URL: postgresql+psycopg://nova_test:nova_test@test-db:5432/nova_test
       ENABLE_EXTERNAL_MODEL_TESTS: "false"
+      AUTH_MODE: demo
     depends_on:
       test-db:
         condition: service_healthy

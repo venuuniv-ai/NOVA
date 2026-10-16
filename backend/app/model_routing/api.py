@@ -27,7 +27,7 @@ from app.proactive.contracts import CommunicationInput, ContextEventInput, Evalu
 from app.proactive.models import ContextEvent
 from app.proactive.service import ProactiveService
 from app.proactive.trigger import ProactiveTriggerEngine, demo_meeting
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 from app.service import fail, find_task
 
 router = APIRouter(prefix="/api/v1", tags=["model-router"])
@@ -143,7 +143,7 @@ def calls(session: DB):
         safe_call(c)
         for c in session.scalars(
             select(ModelCall)
-            .where(ModelCall.user_id == DEMO_USER_ID)
+            .where(ModelCall.user_id == current_user_id())
             .order_by(ModelCall.started_at.desc())
             .limit(100)
         )
@@ -157,7 +157,7 @@ def task_calls(task_id: UUID, session: DB):
         safe_call(c)
         for c in session.scalars(
             select(ModelCall)
-            .where(ModelCall.task_id == task_id, ModelCall.user_id == DEMO_USER_ID)
+            .where(ModelCall.task_id == task_id, ModelCall.user_id == current_user_id())
             .order_by(ModelCall.started_at.desc())
             .limit(100)
         )
@@ -167,7 +167,7 @@ def task_calls(task_id: UUID, session: DB):
 @router.get("/model-router/budget")
 def budget(session: DB):
     day = datetime.now(UTC).date()
-    row = session.get(BudgetDay, (DEMO_USER_ID, day))
+    row = session.get(BudgetDay, (current_user_id(), day))
     consumed, reserved = (row.consumed_usd, row.reserved_usd) if row else (Decimal(0), Decimal(0))
     return {
         "day": day.isoformat(),
@@ -244,7 +244,7 @@ def routed_proactive(payload: ContextEventInput, request: Request, response: Res
 
             completed = session.scalar(
                 select(ModelCall).where(
-                    ModelCall.user_id == DEMO_USER_ID,
+                    ModelCall.user_id == current_user_id(),
                     ModelCall.request_id == provider.communication_request_id,
                 )
             )

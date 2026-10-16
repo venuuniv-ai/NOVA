@@ -33,7 +33,7 @@ from app.proactive.models import (
 )
 from app.proactive.policy import POLICY_VERSION, canonical_payload, evaluate_policy, payload_hash
 from app.proactive.trigger import ProactiveTriggerEngine, RedisCooldown, demo_meeting
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 from app.service import fail, find_task
 
 logger = logging.getLogger("nova.proactive")
@@ -102,7 +102,7 @@ class ProactiveService:
         )
         with SessionLocal.begin() as session:
             # User-level serialization covers the same meeting across different tasks.
-            session.scalar(select(User).where(User.id == DEMO_USER_ID).with_for_update())
+            session.scalar(select(User).where(User.id == current_user_id()).with_for_update())
             task = find_task(session, payload.task_id, lock=True)
             prior = session.scalar(
                 select(ContextEvent).where(
@@ -249,7 +249,7 @@ class ProactiveService:
 
     def find_proposal(self, session, proposal_id, lock=False):
         query = select(ActionProposal).where(
-            ActionProposal.id == proposal_id, ActionProposal.user_id == DEMO_USER_ID
+            ActionProposal.id == proposal_id, ActionProposal.user_id == current_user_id()
         )
         proposal = session.scalar(query.with_for_update() if lock else query)
         if proposal is None:
@@ -295,7 +295,9 @@ class ProactiveService:
             find_task(session, task_id)
             proposals = session.scalars(
                 select(ActionProposal)
-                .where(ActionProposal.task_id == task_id, ActionProposal.user_id == DEMO_USER_ID)
+                .where(
+                    ActionProposal.task_id == task_id, ActionProposal.user_id == current_user_id()
+                )
                 .order_by(ActionProposal.created_at, ActionProposal.id)
                 .with_for_update()
             ).all()
@@ -321,6 +323,11 @@ class ProactiveService:
         session.flush()
 
     def mutate(self, proposal_id, operation, payload, correlation_id):
+        from app.security.identity import principal
+
+        identity = principal.get()
+        if identity and operation in {"approve", "execute"} and "approver" not in identity.roles:
+            fail(403, "FORBIDDEN", "Human approver permission required.")
         from app.database import _evaluation_schema, _evaluation_shadow
 
         if (

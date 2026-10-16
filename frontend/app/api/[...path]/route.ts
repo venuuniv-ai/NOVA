@@ -8,6 +8,8 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
   if (path[0] !== "v1") {
     return Response.json({ error: { code: "NOT_FOUND", message: "Unknown API path." } }, { status: 404 });
   }
+  const bearer = request.headers.get("Authorization") ?? (request.cookies.get("nova_session")?.value ? `Bearer ${request.cookies.get("nova_session")!.value}` : null);
+  if (request.method !== "GET" && request.cookies.has("nova_session") && request.headers.get("Origin") !== (process.env.NOVA_PUBLIC_ORIGIN??"http://localhost:3000")) return Response.json({error:{code:"ORIGIN_REQUIRED"}}, {status:403});
   const base = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
   const url = `${base}/api/${path.map(encodeURIComponent).join("/")}${request.nextUrl.search}`;
   const correlationId = request.headers.get("X-Correlation-ID") ?? crypto.randomUUID();
@@ -30,7 +32,7 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
     }
     const response = await fetch(url, {
       method: request.method,
-      headers: { "Content-Type": contentType, "X-Correlation-ID": correlationId, ...(request.headers.get("Idempotency-Key") ? { "Idempotency-Key": request.headers.get("Idempotency-Key")! } : {}) },
+      headers: { ...(bearer ? { Authorization: bearer } : {}), "Content-Type": contentType, "X-Correlation-ID": correlationId, ...(request.headers.get("Idempotency-Key") ? { "Idempotency-Key": request.headers.get("Idempotency-Key")! } : {}) },
       body: body as BodyInit | undefined,
       cache: "no-store",
       signal: controller.signal,
@@ -43,6 +45,7 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
         "X-Content-Type-Options": "nosniff",
         "Cache-Control": "no-store",
         "X-Correlation-ID": response.headers.get("X-Correlation-ID") ?? correlationId,
+        ...(response.headers.get("X-OTel-Trace-ID") ? {"X-OTel-Trace-ID":response.headers.get("X-OTel-Trace-ID")!}:{}),
         ...(response.headers.get("X-Trace-ID") ? { "X-Trace-ID": response.headers.get("X-Trace-ID")! } : {}),
       },
     });

@@ -26,7 +26,7 @@ from app.memory.models import (
 )
 from app.memory.policy import MemoryPolicy
 from app.models import Task, User
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 from app.service import fail
 
 logger = logging.getLogger("nova.memory")
@@ -56,8 +56,8 @@ def canonical(subject, predicate, value, scope, task_id, kind, privacy, valid_fr
 
 
 class MemoryService:
-    def __init__(self, user_id=DEMO_USER_ID, provider=None, clock=None):
-        self.user_id = user_id
+    def __init__(self, user_id=None, provider=None, clock=None):
+        self.user_id = user_id or current_user_id()
         self.provider = provider or embedding_provider()
         self.clock = clock or (lambda: datetime.now(UTC))
         self.policy = MemoryPolicy()
@@ -614,6 +614,8 @@ class MemoryService:
 
 
 def seed_memories():
+    from app.seed import DEMO_USER_ID
+
     service = MemoryService(provider=FixtureEmbeddingProvider())
     with SessionLocal.begin() as session:
         session.scalar(select(User.id).where(User.id == DEMO_USER_ID).with_for_update())

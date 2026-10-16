@@ -31,7 +31,11 @@ def clean_tasks(migrated_database):
     with engine.begin() as connection:
         connection.execute(
             text(
-                "TRUNCATE experiment_results, experiment_assignments, experiment_definitions, "
+                "TRUNCATE auth_device_registrations, event_dead_letters, event_jobs, "
+                "event_subscriptions, "
+                "event_task_projections, "
+                "event_inbox, event_outbox, auth_identities, experiment_results, "
+                "experiment_assignments, experiment_definitions, "
                 "evaluation_scenario_results, evaluation_runs, evaluation_datasets, "
                 "memory_retrievals, memory_mutations, memory_audits, memory_embeddings, "
                 "memory_records, media_artifacts, visual_observations, processor_runs, "

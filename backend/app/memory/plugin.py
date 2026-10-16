@@ -2,12 +2,12 @@
 
 from app.memory.contracts import MemoryQuery
 from app.memory.service import MemoryService
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 
 
 class MemoryReader:
-    def __init__(self, user_id=DEMO_USER_ID, task_id=None):
-        self.user_id, self.task_id = user_id, task_id
+    def __init__(self, user_id=None, task_id=None):
+        self.user_id, self.task_id = user_id or current_user_id(), task_id
 
     def preferences(self, subject):
         from app.intelligence.contracts import MemoryOutput, Preference, Provenance

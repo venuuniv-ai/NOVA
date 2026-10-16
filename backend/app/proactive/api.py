@@ -17,7 +17,7 @@ from app.proactive.contracts import (
 )
 from app.proactive.models import AuditEvent, ProactiveTrigger
 from app.proactive.service import ProactiveService
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 from app.service import find_task
 
 router = APIRouter(prefix="/api/v1", tags=["proactive-actions"])
@@ -52,7 +52,9 @@ def proactive(task_id: UUID, session: DB):
         )
         for t in session.scalars(
             select(ProactiveTrigger)
-            .where(ProactiveTrigger.task_id == task_id, ProactiveTrigger.user_id == DEMO_USER_ID)
+            .where(
+                ProactiveTrigger.task_id == task_id, ProactiveTrigger.user_id == current_user_id()
+            )
             .order_by(ProactiveTrigger.created_at, ProactiveTrigger.id)
         )
     ]
@@ -103,6 +105,6 @@ def audit(task_id: UUID, session: DB):
     find_task(session, task_id)
     return session.scalars(
         select(AuditEvent)
-        .where(AuditEvent.task_id == task_id, AuditEvent.user_id == DEMO_USER_ID)
+        .where(AuditEvent.task_id == task_id, AuditEvent.user_id == current_user_id())
         .order_by(AuditEvent.created_at, AuditEvent.id)
     ).all()

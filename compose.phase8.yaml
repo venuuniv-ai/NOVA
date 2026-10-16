@@ -1,0 +1,174 @@
+# Explicit local infrastructure overlay. Base Compose remains the lightweight replay mode.
+services:
+  redis:
+    networks: [state]
+  postgres:
+    networks: [state]
+  backend:
+    networks: [application, state, telemetry, backend_host]
+    environment:
+      AUTH_MODE: ${AUTH_MODE:-local}
+      AUTH_KEY_FILE: /app/security/auth.key
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4318
+    volumes:
+      - auth_data:/app/security
+
+  frontend:
+    networks: [edge]
+    environment:
+      API_INTERNAL_URL: http://gateway:8080
+      NOVA_PUBLIC_ORIGIN: http://localhost:3000
+    depends_on:
+      gateway:
+        condition: service_started
+
+  gateway:
+    networks: [edge, application]
+    image: nova-gateway:local
+    build: ./gateway
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  kafka:
+    networks: [state]
+    image: apache/kafka:4.0.1
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: [CMD-SHELL, "/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+    restart: unless-stopped
+
+  kafka-init:
+    networks: [state]
+    image: apache/kafka:4.0.1
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [/opt/kafka/bin/kafka-topics.sh]
+    command: [--bootstrap-server, kafka:9092, --create, --if-not-exists, --topic, nova.events.v1, --partitions, "3", --replication-factor, "1", --config, retention.ms=86400000]
+
+  publisher: &worker
+    networks: [state, telemetry]
+    image: nova-backend:latest
+    build:
+      context: ./backend
+      target: runtime
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-nova}:${POSTGRES_PASSWORD:-nova_local_only}@postgres:5432/${POSTGRES_DB:-nova}
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4318
+      OTEL_SERVICE_NAME: nova-event-worker
+      MEDIA_DIRECTORY: /app/media
+    command: [python, -m, app.events.worker, publisher]
+    depends_on:
+      backend:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  event-worker:
+    <<: *worker
+    command: [python, -m, app.events.worker, projection]
+
+  proactive-consumer:
+    <<: *worker
+    command: [python, -m, app.events.worker, proactive]
+
+  audit-consumer:
+    <<: *worker
+    command: [python, -m, app.events.worker, audit]
+
+  proactive-worker:
+    <<: *worker
+    command: [python, -m, app.events.worker, jobs]
+
+  collector:
+    networks: [telemetry]
+    restart: unless-stopped
+    image: otel/opentelemetry-collector-contrib:0.138.0
+    command: [--config=/etc/otelcol/config.yaml]
+    volumes:
+      - ./infrastructure/observability/collector.yaml:/etc/otelcol/config.yaml:ro
+    depends_on: [tempo]
+
+  prometheus:
+    networks: [telemetry, telemetry_host]
+    restart: unless-stopped
+    image: prom/prometheus:v3.7.1
+    command: [--config.file=/etc/prometheus/prometheus.yml, --storage.tsdb.retention.time=1d]
+    volumes:
+      - ./infrastructure/observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+    ports: ["127.0.0.1:9090:9090"]
+    depends_on: [collector]
+
+  tempo:
+    networks: [telemetry, telemetry_host]
+    restart: unless-stopped
+    image: grafana/tempo:2.9.0
+    command: [-config.file=/etc/tempo.yaml]
+    volumes:
+      - ./infrastructure/observability/tempo.yaml:/etc/tempo.yaml:ro
+    ports: ["127.0.0.1:3200:3200"]
+
+  grafana:
+    networks: [telemetry, telemetry_host]
+    restart: unless-stopped
+    image: grafana/grafana:12.2.1
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./infrastructure/observability/grafana:/etc/grafana/provisioning:ro
+    ports: ["127.0.0.1:3001:3000"]
+    depends_on: [prometheus, tempo]
+
+volumes:
+  kafka_data:
+  auth_data:
+
+networks:
+  edge:
+  application:
+    internal: true
+  state:
+    internal: true
+  telemetry:
+    internal: true
+  identity:
+    internal: true
+
+  backend_host:
+  telemetry_host:
+  identity_host:

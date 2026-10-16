@@ -1,0 +1,33 @@
+name: NOVA deterministic regression
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ENABLE_EXTERNAL_MODEL_TESTS: "false"
+      AUTH_MODE: demo
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      - run: cd gateway && go test -race ./... && go vet ./...
+      - run: docker compose config --quiet && docker compose -f compose.yaml -f compose.phase8.yaml config --quiet
+      - run: docker compose --profile test build backend-tests
+      - run: docker compose --profile test run --rm backend-tests sh -c 'alembic upgrade head && alembic downgrade 0007_evaluation_experimentation && alembic upgrade head && alembic check && pytest -q && ruff check . && ruff format --check . && pip check'
+      - run: npm --prefix frontend ci && npm --prefix frontend run lint && npm --prefix frontend run typecheck && npm --prefix frontend run build
+      - run: npm --prefix frontend audit --audit-level=high
+      - run: docker compose up --build -d --wait
+      - run: cd frontend && npx playwright install --with-deps chromium && npm run test:e2e
+      - run: docker compose exec -T backend python -m app.evaluation.cli --suite REGRESSION
+      - if: always()
+        run: docker compose --profile test down

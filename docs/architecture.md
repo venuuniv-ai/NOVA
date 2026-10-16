@@ -1,5 +1,8 @@
 # NOVA architecture
 
+Phase 8 adds local authentication/ownership, the Go gateway, atomic outbox/Kafka
+workers and local observability/deployment targets. See [Phase 8 architecture](phase-8-architecture.md) and its audit for actual runtime boundaries.
+
 Phase 7 adds versioned fixture evaluations, persisted graders/metrics/gates and
 paired offline experiments. See [Phase 7 architecture](phase-7-architecture.md).
 Evaluation schemas isolate business state; no real inference or Phase 8 work.
@@ -22,7 +25,7 @@ No paid provider or model installation is required. Phase 3 is checkpointed at
 `fd656797c60db50c60e78a163595d5ed4017a153`; Phase 4 is checkpointed at
 `5a4cec77641da80f98976ab258f2f18aa011bf0e`; Phase 5 is checkpointed at
 `8c5e2b80a305779be1723ddded750424064ff30e`. Phase 6 is checkpointed at
-`fd2d054bd384a0d270f969b00c785bef4eb68cda`. Phase 7 remains uncommitted.
+`fd2d054bd384a0d270f969b00c785bef4eb68cda`. Phase 7 is checkpointed at `6fb2e803c9c2a1422bfdc45d2352efdbd2b84872`. Phase 8 remains uncommitted.
 
 Phase 3 adds deterministic proactive triggers, Redis cooldowns, communication
 drafts, payload-bound human decisions, and pure simulated execution. See

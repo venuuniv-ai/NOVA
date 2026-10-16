@@ -19,6 +19,7 @@ class JsonFormatter(logging.Formatter):
             "latency_ms",
             "task_id",
             "trace_id",
+            "otel_trace_id",
             "agent_name",
             "memory_id",
             "media_id",

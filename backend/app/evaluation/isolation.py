@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from sqlalchemy import text
 
+from app import model_registry  # noqa: F401 — CLI must register all tables before cloning
 from app.database import _evaluation_schema, engine
 from app.models import Base
 from app.perception.media import MediaIngestionService
@@ -27,11 +28,15 @@ def scenario_database(run_id=None):
             tables=tables,
             checkfirst=False,
         )
+    from app.security.identity import principal
+
+    identity_token = principal.set(None)
     token = _evaluation_schema.set(schema)
     try:
         yield schema
     finally:
         _evaluation_schema.reset(token)
+        principal.reset(identity_token)
         with engine.begin() as connection:
             connection.execute(text(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE'))
 

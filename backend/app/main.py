@@ -15,6 +15,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_session
 from app.evaluation.api import router as evaluation_router
+from app.events import outbox  # noqa: F401 — transaction hook
+from app.events.api import router as events_router
 from app.intelligence.api import router as intelligence_router
 from app.intelligence.models import AgentExecution
 from app.intelligence.orchestrator import recover_interrupted_executions
@@ -29,7 +31,8 @@ from app.perception.service import recover_perception
 from app.proactive.api import router as proactive_router
 from app.proactive.models import ActionProposal
 from app.schemas import DeviceRead, EventRead, HandoffRequest, HandoffResponse, TaskCreate, TaskRead
-from app.seed import DEMO_USER_ID
+from app.security.api import router as device_security_router
+from app.security.identity import current_user_id
 from app.service import create_task, find_task, handoff_task
 
 logger = logging.getLogger("nova.http")
@@ -39,6 +42,9 @@ DB = Annotated[Session, Depends(get_session)]
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging()
+    from app.telemetry import configure
+
+    configure()
     recover_interrupted_executions()
     recover_model_calls()
     recover_perception()
@@ -56,6 +62,8 @@ app.include_router(model_router)
 app.include_router(perception_router)
 app.include_router(memory_router)
 app.include_router(evaluation_router)
+app.include_router(events_router)
+app.include_router(device_security_router)
 
 
 @app.middleware("http")
@@ -64,17 +72,61 @@ async def correlate(request: Request, call_next):
     correlation_id = incoming if re.fullmatch(r"[A-Za-z0-9._:-]{1,64}", incoming) else str(uuid4())
     request.state.correlation_id = correlation_id
     start = time.perf_counter()
-    try:
-        response = await call_next(request)
-    except Exception:
-        logger.exception("unhandled_request_error", extra={"correlation_id": correlation_id})
-        response = JSONResponse(
-            status_code=500,
-            content={
-                "error": {"code": "INTERNAL_ERROR", "message": "An unexpected error occurred."},
-                "correlation_id": correlation_id,
-            },
-        )
+    from opentelemetry import trace
+    from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+    from starlette.concurrency import run_in_threadpool
+
+    from app.security.auth import authenticate, authorize
+    from app.security.identity import principal
+    from app.telemetry import observe
+
+    context = None
+    parent = TraceContextTextMapPropagator().extract(dict(request.headers))
+    with trace.get_tracer("nova.http").start_as_current_span(
+        "http.request", context=parent
+    ) as span:
+        try:
+            if request.url.path.startswith("/api/"):
+                value = await run_in_threadpool(authenticate, request.headers)
+                authorize(value, request.method, request.url.path)
+                context = principal.set(value)
+            response = await call_next(request)
+        except HTTPException as error:
+            response = JSONResponse(status_code=error.status_code, content={"error": error.detail})
+        except SQLAlchemyError:
+            logger.error(
+                "authentication_storage_unavailable", extra={"correlation_id": correlation_id}
+            )
+            response = JSONResponse(
+                status_code=503,
+                content={
+                    "error": {
+                        "code": "DATABASE_UNAVAILABLE",
+                        "message": "Persistent storage is unavailable.",
+                    }
+                },
+            )
+        except Exception:
+            logger.exception("unhandled_request_error", extra={"correlation_id": correlation_id})
+            response = JSONResponse(
+                status_code=500,
+                content={
+                    "error": {"code": "INTERNAL_ERROR", "message": "An unexpected error occurred."},
+                    "correlation_id": correlation_id,
+                },
+            )
+        finally:
+            if context is not None:
+                principal.reset(context)
+        route = getattr(request.scope.get("route"), "path", "UNMATCHED")
+        span.set_attribute("http.request.method", request.method)
+        span.set_attribute("http.route", route)
+        span.set_attribute("http.response.status_code", response.status_code)
+        if response.headers.get("X-Trace-ID"):
+            span.set_attribute("nova.execution.trace_id", response.headers["X-Trace-ID"])
+        observe(request.method, response.status_code, time.perf_counter() - start, route)
+        if span.get_span_context().is_valid:
+            response.headers["X-OTel-Trace-ID"] = format(span.get_span_context().trace_id, "032x")
     response.headers["X-Correlation-ID"] = correlation_id
     logger.info(
         "request_complete",
@@ -85,6 +137,7 @@ async def correlate(request: Request, call_next):
             "status_code": response.status_code,
             "latency_ms": round((time.perf_counter() - start) * 1000, 2),
             "trace_id": response.headers.get("X-Trace-ID"),
+            "otel_trace_id": response.headers.get("X-OTel-Trace-ID"),
         },
     )
     return response
@@ -152,7 +205,7 @@ def ready(session: DB):
     session.execute(select(ActionProposal.id).limit(1))
     session.execute(select(ModelCall.id).limit(1))
     count = session.scalar(
-        select(func.count()).select_from(Device).where(Device.user_id == DEMO_USER_ID)
+        select(func.count()).select_from(Device).where(Device.user_id == current_user_id())
     )
     if count != 3:
         raise HTTPException(
@@ -163,7 +216,7 @@ def ready(session: DB):
 
 @app.get("/api/v1/devices", response_model=list[DeviceRead])
 def devices(session: DB):
-    devices = session.scalars(select(Device).where(Device.user_id == DEMO_USER_ID)).all()
+    devices = session.scalars(select(Device).where(Device.user_id == current_user_id())).all()
     order = {"DESKTOP": 0, "WEARABLE": 1, "MOBILE": 2}
     return sorted(devices, key=lambda device: order[device.type])
 
@@ -181,7 +234,7 @@ def tasks(
 ):
     return session.scalars(
         select(Task)
-        .where(Task.user_id == DEMO_USER_ID)
+        .where(Task.user_id == current_user_id())
         .order_by(Task.created_at.desc(), Task.id)
         .limit(limit)
         .offset(offset)
@@ -204,3 +257,17 @@ def events(task_id: UUID, session: DB):
     return session.scalars(
         select(TaskEvent).where(TaskEvent.task_id == task_id).order_by(TaskEvent.sequence)
     ).all()
+
+
+@app.get("/api/v1/auth/me")
+def auth_me():
+    from app.security.identity import principal
+
+    value = principal.get()
+    return {
+        "user_id": str(value.user_id),
+        "roles": sorted(value.roles),
+        "device_id": str(value.device_id) if value.device_id else None,
+        "mode": value.mode,
+        "simulation": value.mode == "demo",
+    }

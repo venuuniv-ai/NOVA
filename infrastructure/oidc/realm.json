@@ -1,0 +1,5 @@
+{
+ "realm":"nova","enabled":true,"registrationAllowed":false,"resetPasswordAllowed":false,
+ "sslRequired":"none","accessTokenLifespan":300,
+ "clients":[{"clientId":"nova-web","enabled":true,"publicClient":true,"protocol":"openid-connect","standardFlowEnabled":true,"directAccessGrantsEnabled":false,"redirectUris":["http://localhost:3000/auth/oidc/callback"],"webOrigins":["http://localhost:3000"],"attributes":{"pkce.code.challenge.method":"S256"},"protocolMappers":[{"name":"nova-audience","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"nova-api","access.token.claim":"true","id.token.claim":"false"}},{"name":"registered-device","protocol":"openid-connect","protocolMapper":"oidc-usermodel-attribute-mapper","config":{"user.attribute":"device_id","claim.name":"device_id","jsonType.label":"String","access.token.claim":"true","id.token.claim":"false"}}]}]
+}

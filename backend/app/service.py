@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Device, Task, TaskEvent
 from app.schemas import HandoffRequest, HandoffResponse, TaskCreate
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 
 logger = logging.getLogger("nova.tasks")
 TRANSITIONS = {("DESKTOP", "WEARABLE"), ("WEARABLE", "MOBILE")}
@@ -20,15 +20,20 @@ def fail(status: int, code: str, message: str) -> None:
 
 def find_device(session: Session, device_id: UUID) -> Device:
     device = session.scalar(
-        select(Device).where(Device.id == device_id, Device.user_id == DEMO_USER_ID)
+        select(Device).where(Device.id == device_id, Device.user_id == current_user_id())
     )
     if device is None:
         fail(422, "INVALID_DEVICE", "Device does not belong to the demo user.")
+    from app.security.models import DeviceRegistration
+
+    registration = session.get(DeviceRegistration, device_id)
+    if registration and not registration.enabled:
+        fail(422, "DEVICE_REVOKED", "Device registration is revoked.")
     return device
 
 
 def find_task(session: Session, task_id: UUID, *, lock: bool = False) -> Task:
-    query = select(Task).where(Task.id == task_id, Task.user_id == DEMO_USER_ID)
+    query = select(Task).where(Task.id == task_id, Task.user_id == current_user_id())
     if lock:
         query = query.with_for_update()
     task = session.scalar(query)
@@ -42,7 +47,7 @@ def create_task(session: Session, payload: TaskCreate, correlation_id: str) -> T
     if origin.type != "DESKTOP":
         fail(422, "INVALID_ORIGIN", "Phase 1 tasks must originate on Desktop.")
     task = Task(
-        user_id=DEMO_USER_ID,
+        user_id=current_user_id(),
         title=payload.title,
         description=payload.description,
         origin_device_id=origin.id,

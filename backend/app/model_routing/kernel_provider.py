@@ -7,7 +7,7 @@ from app.model_routing.contracts import ModelRequest
 from app.model_routing.service import ModelRoutingService
 from app.proactive.contracts import CommunicationInput
 from app.schemas import DeviceType
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 
 
 class RoutedModelProvider(ModelProvider):
@@ -54,7 +54,7 @@ class RoutedModelProvider(ModelProvider):
         request = ModelRequest(
             request_id=self.communication_request_id or uuid4(),
             task_id=payload.task_id,
-            user_id=DEMO_USER_ID,
+            user_id=current_user_id(),
             trace_id=payload.trace_id,
             purpose="COMMUNICATION",
             privacy_class="PERSONAL",

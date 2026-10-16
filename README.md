@@ -1,6 +1,28 @@
 # NOVA Core
 
-**Current implementation: Phase 7 evaluation and experimentation.**
+**Current implementation: Phase 8 local infrastructure.**
+The authenticated local overlay adds a Go gateway, server-owned RBAC/resource
+ownership, revocable simulated device identities, an atomic PostgreSQL outbox,
+real local Kafka consumers and draft-only proactive jobs. Open `/operations` for
+actual owned delivery evidence and `/auth` for login. Approval and execution stay
+inside FastAPI; execution remains SIMULATED / NOT SENT.
+
+```sh
+docker compose -f compose.yaml -f compose.phase8.yaml up --build -d --wait
+docker compose exec -T backend python -m app.security.cli provision \
+  --subject local-operator --output /app/security/operator.token
+```
+
+The base Compose stack is explicitly legacy local replay. The Phase 8 overlay
+defaults to short-lived local JWT authentication; the additional compose.oidc.yaml
+profile enables local Keycloak authorization-code/S256 PKCE. No credentials or
+models are bundled. Required external spend remains $0. See the
+[implementation reference](docs/phase-8-implementation-spec.md),
+[architecture](docs/phase-8-architecture.md), [runbook](docs/phase-8-runbook.md) and
+[actual final audit](docs/phase-8-final-audit.md) for verification boundaries,
+including the Kubernetes rollout limitation. Phase 9 was not started.
+
+**Phase 7 evaluation and experimentation.**
 Open `/evals` for the versioned 104-scenario golden dataset, SMOKE/REGRESSION/FULL
 runs, actual evidence and grader failures, explicit metric denominators,
 regression gates, and paired offline A/B, SHADOW and CANARY simulations.
@@ -19,7 +41,7 @@ See [Phase 7 architecture](docs/phase-7-architecture.md) and
 [final audit](docs/phase-7-final-audit.md). The deterministic CI command exits
 nonzero on failed gates. The cautious-threshold candidate can lose useful fixture
 suggestions; results are measured and reported without assuming a candidate win.
-Phase 8 has not been started.
+Phase 8 adds local security and event infrastructure; Phase 9 has not been started.
 
 **Phase 6 controlled memory and personalization.**
 Open `/memory` for explicit memories, pending visual candidates, confirmation,
@@ -45,7 +67,7 @@ See [Phase 6 architecture](docs/phase-6-architecture.md),
 [retrieval ADR](docs/adr/0009-memory-hybrid-retrieval-and-pgvector.md), and
 [final audit](docs/phase-6-final-audit.md).
 Required external spend is $0; local compute/electricity is not priced.
-Phase 7 adds fixture evaluation; Phase 8 has not been started.
+Phase 7 adds fixture evaluation; Phase 8 adds local security and event infrastructure; Phase 9 has not been started.
 
 **Phase 5 multimodal perception and visual context.**
 Open `/perception` to attach NOVA's controlled wearable frame or upload a JPEG,
@@ -71,7 +93,7 @@ See [Phase 5 architecture](docs/phase-5-architecture.md),
 [Phase 5 final audit](docs/phase-5-final-audit.md).
 REAL CLIP / DINOV2 / SAM / VLM are not configured by default. Required external
 API/infrastructure spend is $0; local compute/electricity is not priced.
-Phase 6 adds controlled persistent memory; Phase 7 adds fixture evaluation; Phase 8 has not been started.
+Phase 6 adds controlled persistent memory; Phase 7 adds fixture evaluation; Phase 8 adds local security and event infrastructure; Phase 9 has not been started.
 
 **Phase 4 model intelligence and policy routing.**
 Open `/models` for declared providers, health, explainable routes, UTC budget
@@ -111,7 +133,7 @@ fixture-backed. Explicit `run-routed-agents` and `proactive/evaluate-routed`
 paths demonstrate model abstraction while preserving the same approval policy:
 models can draft, never approve or execute. The routed draft stays pending until
 an explicit human decision; simulation still sends no external message.
-Phase 5 adds the perception layer described above; Phase 6 adds controlled persistent memory; Phase 7 adds fixture evaluation; Phase 8 has not been started.
+Phase 5 adds the perception layer described above; Phase 6 adds controlled persistent memory; Phase 7 adds fixture evaluation; Phase 8 adds local security and event infrastructure; Phase 9 has not been started.
 
 **Phase 3 proactive intelligence and human approval.**
 Command Center receives a synthetic context event at fixture time 13:31:
@@ -142,7 +164,7 @@ python3 scripts/acceptance_phase3.py --verify-task TASK_ID
 Additional Phase 3 APIs are listed in the architecture document and FastAPI
 OpenAPI at `http://localhost:8000/docs`. All earlier routes and tests remain.
 No real calendar, travel, account, AI inference, or communication is connected.
-Phase 4 adds the model intelligence described above. Phase 5 adds the perception layer described above; Phase 6 adds controlled persistent memory; Phase 7 adds fixture evaluation; Phase 8 has not been started.
+Phase 4 adds the model intelligence described above. Phase 5 adds the perception layer described above; Phase 6 adds controlled persistent memory; Phase 7 adds fixture evaluation; Phase 8 adds local security and event infrastructure; Phase 9 has not been started.
 
 **Phase 2 multi-agent core**, built on the verified
 Phase 1 continuity foundation described below. Open **NOVA Intelligence** for

@@ -15,7 +15,7 @@ COPY pyproject.toml .
 CMD ["pytest", "-q"]
 
 FROM base AS runtime
-RUN useradd --create-home nova && mkdir /app/media && chown nova:nova /app/media && chmod 700 /app/media
+RUN useradd --create-home nova && mkdir /app/media /app/security && chown nova:nova /app/media /app/security && chmod 700 /app/media
 USER nova
 EXPOSE 8000
-CMD ["sh", "-c", "alembic upgrade head && python -m app.seed && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && python -m app.security.bootstrap && python -m app.seed && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]

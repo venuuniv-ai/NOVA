@@ -15,7 +15,7 @@ from app.config import settings
 from app.database import SessionLocal
 from app.models import Device
 from app.perception.models import MediaAsset
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 from app.service import fail, find_task
 
 MIMES = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}
@@ -143,7 +143,7 @@ class MediaIngestionService:
             select(MediaAsset).where(
                 MediaAsset.id == media_id,
                 MediaAsset.task_id == task_id,
-                MediaAsset.user_id == DEMO_USER_ID,
+                MediaAsset.user_id == current_user_id(),
             )
         )
         if media is None:

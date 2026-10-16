@@ -1,0 +1,1947 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "publisher"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "publisher"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "publisher",
+              "tier": "worker"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "publisher",
+                "image": "nova-backend:latest",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "env": [
+                  {
+                    "name": "DB_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "nova-db",
+                        "key": "password"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql+psycopg://nova:$(DB_PASSWORD)@postgres:5432/nova"
+                  },
+                  {
+                    "name": "REDIS_URL",
+                    "value": "redis://redis:6379/0"
+                  },
+                  {
+                    "name": "MEDIA_DIRECTORY",
+                    "value": "/app/media"
+                  },
+                  {
+                    "name": "ENABLE_EXTERNAL_MODEL_TESTS",
+                    "value": "false"
+                  },
+                  {
+                    "name": "KAFKA_BOOTSTRAP_SERVERS",
+                    "value": "kafka:9092"
+                  },
+                  {
+                    "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+                    "value": "http://collector:4318"
+                  },
+                  {
+                    "name": "OTEL_SERVICE_NAME",
+                    "value": "nova-event-worker"
+                  }
+                ],
+                "command": [
+                  "python",
+                  "-m",
+                  "app.events.worker",
+                  "publisher"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "event-worker"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "event-worker"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "event-worker",
+              "tier": "worker"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "event-worker",
+                "image": "nova-backend:latest",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "env": [
+                  {
+                    "name": "DB_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "nova-db",
+                        "key": "password"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql+psycopg://nova:$(DB_PASSWORD)@postgres:5432/nova"
+                  },
+                  {
+                    "name": "REDIS_URL",
+                    "value": "redis://redis:6379/0"
+                  },
+                  {
+                    "name": "MEDIA_DIRECTORY",
+                    "value": "/app/media"
+                  },
+                  {
+                    "name": "ENABLE_EXTERNAL_MODEL_TESTS",
+                    "value": "false"
+                  },
+                  {
+                    "name": "KAFKA_BOOTSTRAP_SERVERS",
+                    "value": "kafka:9092"
+                  },
+                  {
+                    "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+                    "value": "http://collector:4318"
+                  },
+                  {
+                    "name": "OTEL_SERVICE_NAME",
+                    "value": "nova-event-worker"
+                  }
+                ],
+                "command": [
+                  "python",
+                  "-m",
+                  "app.events.worker",
+                  "projection"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "proactive-consumer"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "proactive-consumer"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "proactive-consumer",
+              "tier": "worker"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "proactive-consumer",
+                "image": "nova-backend:latest",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "env": [
+                  {
+                    "name": "DB_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "nova-db",
+                        "key": "password"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql+psycopg://nova:$(DB_PASSWORD)@postgres:5432/nova"
+                  },
+                  {
+                    "name": "REDIS_URL",
+                    "value": "redis://redis:6379/0"
+                  },
+                  {
+                    "name": "MEDIA_DIRECTORY",
+                    "value": "/app/media"
+                  },
+                  {
+                    "name": "ENABLE_EXTERNAL_MODEL_TESTS",
+                    "value": "false"
+                  },
+                  {
+                    "name": "KAFKA_BOOTSTRAP_SERVERS",
+                    "value": "kafka:9092"
+                  },
+                  {
+                    "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+                    "value": "http://collector:4318"
+                  },
+                  {
+                    "name": "OTEL_SERVICE_NAME",
+                    "value": "nova-event-worker"
+                  }
+                ],
+                "command": [
+                  "python",
+                  "-m",
+                  "app.events.worker",
+                  "proactive"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "audit-consumer"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "audit-consumer"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "audit-consumer",
+              "tier": "worker"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "audit-consumer",
+                "image": "nova-backend:latest",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "env": [
+                  {
+                    "name": "DB_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "nova-db",
+                        "key": "password"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql+psycopg://nova:$(DB_PASSWORD)@postgres:5432/nova"
+                  },
+                  {
+                    "name": "REDIS_URL",
+                    "value": "redis://redis:6379/0"
+                  },
+                  {
+                    "name": "MEDIA_DIRECTORY",
+                    "value": "/app/media"
+                  },
+                  {
+                    "name": "ENABLE_EXTERNAL_MODEL_TESTS",
+                    "value": "false"
+                  },
+                  {
+                    "name": "KAFKA_BOOTSTRAP_SERVERS",
+                    "value": "kafka:9092"
+                  },
+                  {
+                    "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+                    "value": "http://collector:4318"
+                  },
+                  {
+                    "name": "OTEL_SERVICE_NAME",
+                    "value": "nova-event-worker"
+                  }
+                ],
+                "command": [
+                  "python",
+                  "-m",
+                  "app.events.worker",
+                  "audit"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "proactive-worker"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "proactive-worker"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "proactive-worker",
+              "tier": "worker"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "proactive-worker",
+                "image": "nova-backend:latest",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "env": [
+                  {
+                    "name": "DB_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "nova-db",
+                        "key": "password"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql+psycopg://nova:$(DB_PASSWORD)@postgres:5432/nova"
+                  },
+                  {
+                    "name": "REDIS_URL",
+                    "value": "redis://redis:6379/0"
+                  },
+                  {
+                    "name": "MEDIA_DIRECTORY",
+                    "value": "/app/media"
+                  },
+                  {
+                    "name": "ENABLE_EXTERNAL_MODEL_TESTS",
+                    "value": "false"
+                  },
+                  {
+                    "name": "KAFKA_BOOTSTRAP_SERVERS",
+                    "value": "kafka:9092"
+                  },
+                  {
+                    "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+                    "value": "http://collector:4318"
+                  },
+                  {
+                    "name": "OTEL_SERVICE_NAME",
+                    "value": "nova-event-worker"
+                  }
+                ],
+                "command": [
+                  "python",
+                  "-m",
+                  "app.events.worker",
+                  "jobs"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "kafka-data"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "kafka"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "kafka"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "kafka"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "kafka",
+                "image": "apache/kafka:4.0.1",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "env": [
+                  {
+                    "name": "KAFKA_NODE_ID",
+                    "value": "1"
+                  },
+                  {
+                    "name": "KAFKA_PROCESS_ROLES",
+                    "value": "broker,controller"
+                  },
+                  {
+                    "name": "KAFKA_LISTENERS",
+                    "value": "PLAINTEXT://:9092,CONTROLLER://:9093"
+                  },
+                  {
+                    "name": "KAFKA_ADVERTISED_LISTENERS",
+                    "value": "PLAINTEXT://kafka:9092"
+                  },
+                  {
+                    "name": "KAFKA_CONTROLLER_LISTENER_NAMES",
+                    "value": "CONTROLLER"
+                  },
+                  {
+                    "name": "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
+                    "value": "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+                  },
+                  {
+                    "name": "KAFKA_CONTROLLER_QUORUM_VOTERS",
+                    "value": "1@kafka:9093"
+                  },
+                  {
+                    "name": "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",
+                    "value": "1"
+                  },
+                  {
+                    "name": "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR",
+                    "value": "1"
+                  },
+                  {
+                    "name": "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR",
+                    "value": "1"
+                  },
+                  {
+                    "name": "KAFKA_AUTO_CREATE_TOPICS_ENABLE",
+                    "value": "false"
+                  },
+                  {
+                    "name": "KAFKA_LOG_DIRS",
+                    "value": "/var/lib/kafka/data"
+                  },
+                  {
+                    "name": "CLUSTER_ID",
+                    "value": "MkU3OEVBNTcwNTJENDM2Qk"
+                  },
+                  {
+                    "name": "KAFKA_HEAP_OPTS",
+                    "value": "-Xms128m -Xmx512m"
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "data",
+                    "mountPath": "/var/lib/kafka/data"
+                  }
+                ],
+                "ports": [
+                  {
+                    "containerPort": 9092
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "data",
+                "persistentVolumeClaim": {
+                  "claimName": "kafka-data"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "kafka"
+      },
+      "spec": {
+        "selector": {
+          "app": "kafka"
+        },
+        "ports": [
+          {
+            "port": 9092,
+            "targetPort": 9092,
+            "name": "port-9092"
+          },
+          {
+            "port": 9093,
+            "targetPort": 9093,
+            "name": "port-9093"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "name": "kafka-init"
+      },
+      "spec": {
+        "backoffLimit": 12,
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "kafka-init"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "kafka",
+                "image": "apache/kafka:4.0.1",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "env": [
+                  {
+                    "name": "KAFKA_NODE_ID",
+                    "value": "1"
+                  },
+                  {
+                    "name": "KAFKA_PROCESS_ROLES",
+                    "value": "broker,controller"
+                  },
+                  {
+                    "name": "KAFKA_LISTENERS",
+                    "value": "PLAINTEXT://:9092,CONTROLLER://:9093"
+                  },
+                  {
+                    "name": "KAFKA_ADVERTISED_LISTENERS",
+                    "value": "PLAINTEXT://kafka:9092"
+                  },
+                  {
+                    "name": "KAFKA_CONTROLLER_LISTENER_NAMES",
+                    "value": "CONTROLLER"
+                  },
+                  {
+                    "name": "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
+                    "value": "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+                  },
+                  {
+                    "name": "KAFKA_CONTROLLER_QUORUM_VOTERS",
+                    "value": "1@kafka:9093"
+                  },
+                  {
+                    "name": "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",
+                    "value": "1"
+                  },
+                  {
+                    "name": "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR",
+                    "value": "1"
+                  },
+                  {
+                    "name": "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR",
+                    "value": "1"
+                  },
+                  {
+                    "name": "KAFKA_AUTO_CREATE_TOPICS_ENABLE",
+                    "value": "false"
+                  },
+                  {
+                    "name": "KAFKA_LOG_DIRS",
+                    "value": "/var/lib/kafka/data"
+                  },
+                  {
+                    "name": "CLUSTER_ID",
+                    "value": "MkU3OEVBNTcwNTJENDM2Qk"
+                  },
+                  {
+                    "name": "KAFKA_HEAP_OPTS",
+                    "value": "-Xms128m -Xmx512m"
+                  }
+                ],
+                "command": [
+                  "/opt/kafka/bin/kafka-topics.sh",
+                  "--bootstrap-server",
+                  "kafka:9092",
+                  "--create",
+                  "--if-not-exists",
+                  "--topic",
+                  "nova.events.v1",
+                  "--partitions",
+                  "3",
+                  "--replication-factor",
+                  "1"
+                ]
+              }
+            ],
+            "restartPolicy": "OnFailure"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "collector-config"
+      },
+      "data": {
+        "collector.yaml": "receivers:\n  otlp:\n    protocols:\n      http:\n        endpoint: 0.0.0.0:4318\nprocessors:\n  memory_limiter:\n    check_interval: 1s\n    limit_mib: 128\n  batch:\n    timeout: 2s\nexporters:\n  otlphttp/tempo:\n    endpoint: http://tempo:4318\n    tls:\n      insecure: true\n  prometheus:\n    endpoint: 0.0.0.0:8889\nservice:\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [memory_limiter, batch]\n      exporters: [otlphttp/tempo]\n    metrics:\n      receivers: [otlp]\n      processors: [memory_limiter, batch]\n      exporters: [prometheus]\n"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "prometheus-config"
+      },
+      "data": {
+        "prometheus.yaml": "global:\n  scrape_interval: 5s\nscrape_configs:\n  - job_name: nova-otel\n    static_configs:\n      - targets: [collector:8889]\n"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "tempo-config"
+      },
+      "data": {
+        "tempo.yaml": "server:\n  http_listen_port: 3200\ndistributor:\n  receivers:\n    otlp:\n      protocols:\n        http:\n          endpoint: 0.0.0.0:4318\ningester:\n  max_block_duration: 1m\ncompactor:\n  compaction:\n    block_retention: 24h\nstorage:\n  trace:\n    backend: local\n    wal:\n      path: /tmp/tempo/wal\n    local:\n      path: /tmp/tempo/blocks\n"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "collector"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "collector"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "collector"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "collector",
+                "image": "otel/opentelemetry-collector-contrib:0.138.0",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "command": [
+                  "/otelcol-contrib",
+                  "--config=/etc/nova/collector.yaml"
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/etc/nova",
+                    "readOnly": true
+                  }
+                ],
+                "ports": [
+                  {
+                    "containerPort": 4318
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "configMap": {
+                  "name": "collector-config"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "collector"
+      },
+      "spec": {
+        "selector": {
+          "app": "collector"
+        },
+        "ports": [
+          {
+            "port": 4318,
+            "targetPort": 4318,
+            "name": "port-4318"
+          },
+          {
+            "port": 8889,
+            "targetPort": 8889,
+            "name": "port-8889"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "tempo"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "tempo"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "tempo"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "tempo",
+                "image": "grafana/tempo:2.9.0",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "command": [
+                  "/tempo",
+                  "-config.file=/etc/nova/tempo.yaml"
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/etc/nova",
+                    "readOnly": true
+                  }
+                ],
+                "ports": [
+                  {
+                    "containerPort": 3200
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "configMap": {
+                  "name": "tempo-config"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "tempo"
+      },
+      "spec": {
+        "selector": {
+          "app": "tempo"
+        },
+        "ports": [
+          {
+            "port": 3200,
+            "targetPort": 3200,
+            "name": "port-3200"
+          },
+          {
+            "port": 4318,
+            "targetPort": 4318,
+            "name": "port-4318"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "prometheus"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "prometheus"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "prometheus"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "prometheus",
+                "image": "prom/prometheus:v3.7.1",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "command": [
+                  "/bin/prometheus",
+                  "--config.file=/etc/nova/prometheus.yaml",
+                  "--storage.tsdb.path=/tmp/prometheus",
+                  "--storage.tsdb.retention.time=1d"
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/etc/nova",
+                    "readOnly": true
+                  }
+                ],
+                "ports": [
+                  {
+                    "containerPort": 9090
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "configMap": {
+                  "name": "prometheus-config"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "prometheus"
+      },
+      "spec": {
+        "selector": {
+          "app": "prometheus"
+        },
+        "ports": [
+          {
+            "port": 9090,
+            "targetPort": 9090
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "grafana-local"
+      },
+      "data": {
+        "datasources.yaml": "apiVersion: 1\ndatasources:\n  - name: Local Prometheus\n    uid: nova-prometheus\n    type: prometheus\n    access: proxy\n    url: http://prometheus:9090\n    isDefault: true\n  - name: Local Tempo\n    uid: nova-tempo\n    type: tempo\n    access: proxy\n    url: http://tempo:3200\n",
+        "provider.yaml": "apiVersion: 1\nproviders:\n  - name: NOVA local\n    folder: NOVA\n    type: file\n    options:\n      path: /etc/grafana/provisioning/dashboards\n",
+        "nova.json": "{\"uid\":\"nova-local\",\"title\":\"NOVA Local HTTP\",\"schemaVersion\":39,\"version\":1,\"panels\":[{\"id\":1,\"type\":\"timeseries\",\"title\":\"Actual HTTP requests / second\",\"datasource\":{\"type\":\"prometheus\",\"uid\":\"nova-prometheus\"},\"targets\":[{\"expr\":\"sum(rate(nova_http_requests_total[1m]))\",\"refId\":\"A\"}],\"gridPos\":{\"h\":8,\"w\":12,\"x\":0,\"y\":0}},{\"id\":2,\"type\":\"timeseries\",\"title\":\"HTTP P95 seconds\",\"datasource\":{\"type\":\"prometheus\",\"uid\":\"nova-prometheus\"},\"targets\":[{\"expr\":\"histogram_quantile(0.95,sum by(le)(rate(nova_http_duration_seconds_bucket[1m])))\",\"refId\":\"A\"}],\"gridPos\":{\"h\":8,\"w\":12,\"x\":12,\"y\":0}}]}\n"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "grafana"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "grafana"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "grafana"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "grafana",
+                "image": "grafana/grafana:12.2.1",
+                "imagePullPolicy": "IfNotPresent",
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "env": [
+                  {
+                    "name": "GF_AUTH_ANONYMOUS_ENABLED",
+                    "value": "true"
+                  },
+                  {
+                    "name": "GF_AUTH_ANONYMOUS_ORG_ROLE",
+                    "value": "Viewer"
+                  },
+                  {
+                    "name": "GF_AUTH_DISABLE_LOGIN_FORM",
+                    "value": "true"
+                  },
+                  {
+                    "name": "GF_PATHS_DATA",
+                    "value": "/tmp/grafana"
+                  },
+                  {
+                    "name": "GF_PATHS_LOGS",
+                    "value": "/tmp/grafana-logs"
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/etc/grafana/provisioning/datasources/local.yaml",
+                    "subPath": "datasources.yaml",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/etc/grafana/provisioning/dashboards/provider.yaml",
+                    "subPath": "provider.yaml",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/etc/grafana/provisioning/dashboards/nova.json",
+                    "subPath": "nova.json",
+                    "readOnly": true
+                  }
+                ],
+                "ports": [
+                  {
+                    "containerPort": 3000
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "configMap": {
+                  "name": "grafana-local"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "grafana"
+      },
+      "spec": {
+        "selector": {
+          "app": "grafana"
+        },
+        "ports": [
+          {
+            "port": 3000,
+            "targetPort": 3000
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "workers"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "tier": "worker"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "postgres"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 5432
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "redis"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 6379
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "kafka"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 9092
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "collector"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 4318
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "worker-postgres"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "postgres"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "tier": "worker"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 5432
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "worker-redis"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "redis"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "tier": "worker"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 6379
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "kafka"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "kafka"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "tier": "worker"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 9092
+              }
+            ]
+          },
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "kafka-init"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 9092
+              }
+            ]
+          },
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "kafka"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 9092
+              },
+              {
+                "protocol": "TCP",
+                "port": 9093
+              }
+            ]
+          }
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "kafka"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 9092
+              },
+              {
+                "protocol": "TCP",
+                "port": 9093
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "kafka-init"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "kafka-init"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "kafka"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 9092
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "backend-telemetry"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "backend"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "collector"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 4318
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "collector"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "collector"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "backend"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 4318
+              }
+            ]
+          },
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "tier": "worker"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 4318
+              }
+            ]
+          },
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "prometheus"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 8889
+              }
+            ]
+          }
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "tempo"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 4318
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "tempo"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "tempo"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "collector"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 4318
+              }
+            ]
+          },
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "grafana"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 3200
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "prometheus"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "prometheus"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "grafana"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 9090
+              }
+            ]
+          }
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "collector"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 8889
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "grafana"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "grafana"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ],
+        "ingress": [
+          {
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 3000
+              }
+            ]
+          }
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "prometheus"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 9090
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "tempo"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 3200
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,10 +1,17 @@
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    auth_mode: Literal["demo", "local", "oidc"] = "local"
+    auth_key_file: str = ""
+    auth_audience: str = "nova-api"
+    oidc_issuer: str = ""
+    oidc_jwks_file: str = ""
+    oidc_jwks_url: str = ""
     database_url: str = "postgresql+psycopg://nova:nova_local_only@localhost:5432/nova"
     redis_url: str = "redis://localhost:6379/0"
     local_model_enabled: bool = False

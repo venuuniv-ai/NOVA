@@ -15,7 +15,7 @@ from app.evaluation.experiments import Experiments, compare
 from app.evaluation.models import EvaluationRun, Experiment
 from app.evaluation.reports import markdown_report
 from app.evaluation.runner import EvaluationRunner, load_dataset, public_store, selected
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 
 router = APIRouter(prefix="/api/v1", tags=["evaluation"])
 
@@ -57,7 +57,7 @@ def runs():
         ids = list(
             s.scalars(
                 select(EvaluationRun.id)
-                .where(EvaluationRun.user_id == DEMO_USER_ID)
+                .where(EvaluationRun.user_id == current_user_id())
                 .order_by(EvaluationRun.started_at.desc())
                 .limit(100)
             )
@@ -107,7 +107,7 @@ def experiments():
         ids = list(
             s.scalars(
                 select(Experiment.id)
-                .where(Experiment.user_id == DEMO_USER_ID)
+                .where(Experiment.user_id == current_user_id())
                 .order_by(Experiment.created_at.desc())
                 .limit(100)
             )

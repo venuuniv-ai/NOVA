@@ -103,3 +103,11 @@ yarl==1.25.1
 redis==5.2.1
 
 pillow==12.3.0
+googleapis-common-protos==1.75.5
+kafka-python==2.2.20
+opentelemetry-exporter-http-transport==0.66b1
+opentelemetry-exporter-otlp-common==0.66b1
+opentelemetry-exporter-otlp-proto-common==1.45.1
+opentelemetry-exporter-otlp-proto-http==1.45.1
+opentelemetry-proto==1.45.1
+protobuf==7.36.2

@@ -45,3 +45,10 @@ model-weights/
 venv/
 *.pt
 *.onnx
+
+# Phase 8 operator secrets and local infrastructure runtime output.
+.secrets/
+*.tfstate*
+.terraform/
+*.tfplan
+.local/

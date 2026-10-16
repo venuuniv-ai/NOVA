@@ -8,7 +8,7 @@ from app.evaluation.models import Assignment, Experiment, ExperimentResult
 from app.evaluation.runner import EvaluationRunner, load_dataset, public_store, selected
 from app.memory.service import digest
 from app.models import User
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 from app.service import fail
 
 
@@ -66,8 +66,8 @@ def compare(baseline, candidate):
 
 
 class Experiments:
-    def __init__(self, user_id=DEMO_USER_ID):
-        self.user_id = user_id
+    def __init__(self, user_id=None):
+        self.user_id = user_id or current_user_id()
         self.runner = EvaluationRunner(user_id)
 
     def create(self, payload):

@@ -18,7 +18,7 @@ from app.perception.models import MediaArtifact, MediaAsset, PerceptionRun
 from app.perception.processors import processors
 from app.perception.service import PerceptionOrchestrator
 from app.schemas import IdempotencyKey
-from app.seed import DEMO_USER_ID
+from app.security.identity import current_user_id
 from app.service import find_task
 
 router = APIRouter(prefix="/api/v1", tags=["perception"])
@@ -70,7 +70,7 @@ def media_list(task_id: UUID, session: DB):
         ingestion.read(m)
         for m in session.scalars(
             select(MediaAsset)
-            .where(MediaAsset.task_id == task_id, MediaAsset.user_id == DEMO_USER_ID)
+            .where(MediaAsset.task_id == task_id, MediaAsset.user_id == current_user_id())
             .order_by(MediaAsset.created_at.desc())
             .limit(100)
         )
