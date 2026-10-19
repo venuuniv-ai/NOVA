@@ -16,6 +16,7 @@ from app.database import engine
 from app.model_routing.budget import BudgetPolicy
 from app.model_routing.cache import ResultCache
 from app.model_routing.contracts import ModelResponse
+from app.model_routing.diagnostics import safe_diagnostic
 from app.model_routing.models import BudgetDay, ModelCall
 from app.model_routing.policy import eligibility, requires_budget
 from app.model_routing.providers import ProviderFailure, validate_result
@@ -252,6 +253,11 @@ class ModelRoutingService:
                     session.commit()
                     circuit.success()
                 except Exception as error:
+                    detail = (
+                        safe_diagnostic(error.diagnostic)
+                        if isinstance(error, ProviderFailure) and error.diagnostic
+                        else None
+                    )
                     code = (
                         error.code
                         if isinstance(error, ProviderFailure)
@@ -266,6 +272,7 @@ class ModelRoutingService:
                             "error": code,
                             "invoked": True,
                             "latency_ms": round((time.perf_counter() - start) * 1000, 3),
+                            **({"diagnostic": detail} if detail else {}),
                         }
                     )
                     self.budget.settle(session, call)
@@ -336,6 +343,11 @@ class ModelRoutingService:
                 if not candidates
                 else "UNAVAILABLE"
             )
+            # Strict local execution has no fallback: preserve the concrete invoked failure.
+            if len(candidates) == 1 and candidates[0].spec.provider == "phase9-local":
+                invoked = [a for a in attempted if a.get("invoked") and a.get("error")]
+                if invoked:
+                    response.safe_error = invoked[-1]["error"]
         call.status = response.status
         call.provider, call.model, call.tier = (
             response.provider,

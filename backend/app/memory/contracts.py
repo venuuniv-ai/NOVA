@@ -138,6 +138,7 @@ class MemoryRead(Contract):
 
 
 class MemoryQuery(Contract):
+    retrieval_strategy: Literal["HYBRID", "LEXICAL", "SEMANTIC"] = "HYBRID"
     task_id: UUID | None = None
     query: str = Field(default="", max_length=500)
     types: list[MemoryType] = Field(

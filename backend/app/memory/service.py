@@ -541,23 +541,28 @@ class MemoryService:
                         .order_by(func.ts_rank_cd(doc, ts).desc(), MemoryRecord.id)
                     ).all()
                 )
-                vector = self.embed(query.query, query.privacy_ceiling)
-                distance = MemoryEmbedding.embedding.op("OPERATOR(public.<=>)")(vector.vector)
-                nearest = session.execute(
-                    select(MemoryEmbedding.memory_id, distance.label("distance"))
-                    .where(
-                        MemoryEmbedding.memory_id.in_(ids),
-                        MemoryEmbedding.provider == vector.provider,
-                        MemoryEmbedding.model == vector.model,
-                        MemoryEmbedding.dimension == vector.dimension,
-                    )
-                    .order_by(distance, MemoryEmbedding.memory_id)
-                    .limit(100)
-                ).all()
-                semantic = [r.memory_id for r in nearest]
-                similarities = {r.memory_id: 1 - float(r.distance) for r in nearest}
+                if query.retrieval_strategy != "LEXICAL":
+                    vector = self.embed(query.query, query.privacy_ceiling)
+                    distance = MemoryEmbedding.embedding.op("OPERATOR(public.<=>)")(vector.vector)
+                    nearest = session.execute(
+                        select(MemoryEmbedding.memory_id, distance.label("distance"))
+                        .where(
+                            MemoryEmbedding.memory_id.in_(ids),
+                            MemoryEmbedding.provider == vector.provider,
+                            MemoryEmbedding.model == vector.model,
+                            MemoryEmbedding.dimension == vector.dimension,
+                        )
+                        .order_by(distance, MemoryEmbedding.memory_id)
+                        .limit(100)
+                    ).all()
+                    semantic = [r.memory_id for r in nearest]
+                    similarities = {r.memory_id: 1 - float(r.distance) for r in nearest}
             if not query.query and not structured:
                 structured = ids
+            if query.retrieval_strategy == "LEXICAL":
+                structured, semantic, similarities = [], [], {}
+            elif query.retrieval_strategy == "SEMANTIC":
+                structured, lexical = [], []
             ranks = [
                 {id: i for i, id in enumerate(source, 1)}
                 for source in [structured, lexical, semantic]

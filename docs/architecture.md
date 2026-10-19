@@ -217,3 +217,13 @@ notifications; no creation idempotency; no pagination controls in the UI; no
 authentication or external calendar/messages. There are no agents, LLM/VLMs,
 RAG, memory, Kafka, Go services, cloud provisioning, Kubernetes, Terraform,
 bandits, or full telemetry in Phase 1.
+
+
+Phase 9 extends existing routing/memory/perception with explicit inference modes,
+owned extractive grounding and versioned reindex jobs. Historical real inference
+and the bounded SELECTION_V1 positive/insufficiency acceptance have passed.
+Phase 9 local cross-stack qualification is COMPLETE as of October 19, 2026;
+real configuration is disabled and services are stopped. New activation still
+requires approval and resource checks. See
+[Phase 9 details](phase-9-architecture.md). The Phase 8
+Kubernetes and NetworkPolicy qualifications remain unchanged.

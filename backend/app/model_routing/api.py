@@ -196,6 +196,10 @@ def routed_agents(task_id: UUID, payload: RunAgentsRequest, request: Request, re
 
 @router.post("/proactive/evaluate-routed", response_model=EvaluationRead)
 def routed_proactive(payload: ContextEventInput, request: Request, response: Response, session: DB):
+    return routed_proactive_impl(payload, request, response, session)
+
+
+def routed_proactive_impl(payload, request, response, session, strict_mode=None):
     import asyncio
 
     task = find_task(session, payload.task_id)
@@ -227,6 +231,7 @@ def routed_proactive(payload: ContextEventInput, request: Request, response: Res
                 correlation_id=request.state.correlation_id,
                 communication_request_id=uuid5(trace_id, "communication-v1"),
                 communication_device=device.type,
+                strict_inference_mode=strict_mode,
             )
             session.commit()  # Inference occurs before action locks.
             runtime = KernelRuntime(provider)

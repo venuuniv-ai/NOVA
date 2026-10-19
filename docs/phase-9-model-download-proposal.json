@@ -1,0 +1,43 @@
+{
+  "repository": "BAAI/bge-small-en-v1.5",
+  "revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "files": [
+    {
+      "path": "README.md",
+      "size": 94783,
+      "sha256": null
+    },
+    {
+      "path": "config.json",
+      "size": 743,
+      "sha256": null
+    },
+    {
+      "path": "model.safetensors",
+      "size": 133466304,
+      "sha256": "3c9f31665447c8911517620762200d2245a2518d6e7208acc78cd9db317e21ad"
+    },
+    {
+      "path": "special_tokens_map.json",
+      "size": 125,
+      "sha256": null
+    },
+    {
+      "path": "tokenizer.json",
+      "size": 711396,
+      "sha256": null
+    },
+    {
+      "path": "tokenizer_config.json",
+      "size": 366,
+      "sha256": null
+    },
+    {
+      "path": "vocab.txt",
+      "size": 231508,
+      "sha256": null
+    }
+  ],
+  "state": "PROPOSED_ONLY_NOT_DOWNLOADED",
+  "approval_required": true
+}

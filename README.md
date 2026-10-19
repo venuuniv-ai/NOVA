@@ -482,3 +482,35 @@ adapters, real tool integrations, budget-aware routing, clearly labeled replay
 demos, and justified observability infrastructure. Kafka, RAG, VLMs, external
 integrations, cloud deployments, and real hardware integrations remain
 **planned only**. Phase 3 adds only the documented synthetic proactive/approval flow.
+
+
+## Phase 9 local inference integration
+
+**Phase 9 COMPLETE — bounded local acceptance and final qualification, October 19, 2026.**
+Explicit FIXTURE / LOCAL_REAL / DISABLED modes, versioned embeddings, checkpointed
+reindexing and owned grounding are implemented at `/inference`. Real BGE inference,
+reindex/retrieval, Qwen structured generation and sequential residency were demonstrated.
+The opt-in SELECTION_V1 contract passed both owner-authenticated positive grounding
+and conditional insufficiency abstention; original UUID/quote and privacy checks passed.
+Citations are attached by the application after independent answer verification.
+Historical legacy abstention failures remain preserved in the audit.
+
+Final qualification: 700 backend passes/one explicit real-model skip, 13 controller
+passes, Go race/vet, frontend lint/typecheck/build, 56 browser cases across replay/
+local-auth/OIDC profiles, baseline golden FULL 104/104, SMOKE 10/10, REGRESSION 25/25,
+and local Kafka duplicate/forgery/HITL/outage recovery. These are finite local checks,
+not general model quality, production capacity or security certification. The cautious
+negative-control candidate remains 23/25 with gate FAIL.
+
+SELECTION_V1 independently supports a narrow named-subject preference subset; unknown
+question forms receive no asserted supporting context. Insufficiency acceptance used
+empty selected evidence, not calibrated semantic rejection. General entailment,
+vision inference and a real LLM judge remain unqualified. Phase 8 Kubernetes and
+NetworkPolicy limitations remain unchanged. See [architecture](docs/phase-9-architecture.md)
+and the [final audit](docs/phase-9-final-audit.md) for exact evidence and limits.
+
+All qualification/model services are stopped and private real configurations disabled.
+FIXTURE and legacy EXTRACTIVE_V1 remain defaults; real activation requires a new scoped
+approval and fresh resource checks. No automatic downloads, paid services or external
+messages. The [staging manifest](docs/phase-9-staging-manifest.md) is prepared for review;
+nothing has been staged or committed. Phase 10 has not started.

@@ -8,7 +8,7 @@ from app.intelligence.contracts import Contract
 from app.perception.evidence import ContextEvidence
 from app.schemas import DeviceType, IdempotencyKey
 
-Processor = Literal["FIXTURE_VISION", "CLIP", "DINOV2", "SAM", "FIXTURE_VLM"]
+Processor = Literal["FIXTURE_VISION", "CLIP", "DINOV2", "SAM", "FIXTURE_VLM", "LOCAL_VLM"]
 ScoreType = Literal["NONE", "CLIP_COSINE", "SAM_IOU", "VLM_SELF_REPORTED"]
 
 

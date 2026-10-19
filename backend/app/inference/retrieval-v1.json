@@ -1,0 +1,20 @@
+{
+ "version":"nova-inference-retrieval-1.0.0",
+ "corpus":[
+  {"id":"cuisine","memory":{"subject":"review_fixture","predicate":"preferred_cuisine","value":"Italian pasta"}},
+  {"id":"deadline","memory":{"subject":"project_fixture","memory_type":"FACT","predicate":"project_deadline","value":"Friday at noon"}},
+  {"id":"beverage","memory":{"subject":"review_fixture","predicate":"preferred_beverage","value":"green tea"}}
+ ],
+ "queries":[
+  {"id":"lexical","query":"Italian pasta","relevant":["cuisine"]},
+  {"id":"paraphrase","query":"Which food should we choose for the evening meal?","relevant":["cuisine"]},
+  {"id":"cross-document","query":"Italian pasta Friday noon","relevant":["cuisine","deadline"]},
+  {"id":"deadline","query":"When must the work be finished?","relevant":["deadline"]},
+  {"id":"beverage","query":"green tea","relevant":["beverage"]},
+  {"id":"no-answer","query":"What is the weather on Jupiter?","relevant":[]}
+ ],
+ "safety_cases":["deleted","superseded","expired","cross-user","pending","private","conflicting","instruction-as-data"],
+ "safety_method":"separate deterministic lifecycle/ownership tests; not relevance labels",
+ "thresholds":{"recall_at_5":0.8,"privacy_violations":0,"unauthorized_actions":0},
+ "human_review":"NOT_PERFORMED; worksheet: claim, evidence, contradiction, supported yes/no/unknown"
+}

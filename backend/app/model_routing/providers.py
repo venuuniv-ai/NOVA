@@ -12,11 +12,12 @@ from pydantic import ValidationError
 from app.intelligence.contracts import AgentInput, ContextOutput, CriticOutput, PlanOutput
 from app.intelligence.provider import FixtureModelProvider
 from app.model_routing.contracts import ModelRequest, ProviderResult, ProviderSpec, TextOutput
+from app.model_routing.diagnostics import FailureDiagnostic
 from app.proactive.contracts import Attendee, CommunicationInput, CommunicationOutput
 
 
 class ProviderFailure(Exception):
-    def __init__(self, code):
+    def __init__(self, code, diagnostic=None):
         allowed = {
             "TIMEOUT",
             "UNAVAILABLE",
@@ -29,10 +30,26 @@ class ProviderFailure(Exception):
             "UNKNOWN_PROVIDER_ERROR",
         }
         self.code = code if code in allowed else "UNKNOWN_PROVIDER_ERROR"
+        # Revalidate at the shared boundary; arbitrary exception text is never metadata.
+        self.diagnostic = (
+            FailureDiagnostic.model_validate(
+                diagnostic.model_dump() if isinstance(diagnostic, FailureDiagnostic) else diagnostic
+            ).model_dump(mode="json")
+            if diagnostic is not None
+            else None
+        )
         super().__init__(self.code)
 
 
 def output_schema(purpose):
+    if purpose == "GROUNDED_SELECTION":
+        from app.inference.contracts import GroundedSelection
+
+        return GroundedSelection
+    if purpose == "GROUNDED":
+        from app.inference.contracts import GroundedOutput
+
+        return GroundedOutput
     if purpose == "VISUAL_CONTEXT":
         from app.perception.contracts import VisionOutput
 

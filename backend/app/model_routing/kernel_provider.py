@@ -19,6 +19,17 @@ class RoutedModelProvider(ModelProvider):
     model_name: str = "router-selected"
     capabilities: tuple[str, ...] = ("structured_output", "policy_routing")
 
+    strict_inference_mode: str | None = None
+
+    def routing_service(self):
+        if self.strict_inference_mode:
+            from app.inference.providers import selected, strict_registry
+
+            return ModelRoutingService(
+                providers=strict_registry(selected(self.strict_inference_mode, "STRUCTURED"))
+            )
+        return ModelRoutingService()
+
     correlation_id: str = "model-operation"
     communication_request_id: UUID | None = None
     communication_device: DeviceType = "DESKTOP"
@@ -37,7 +48,7 @@ class RoutedModelProvider(ModelProvider):
             current_device=payload.current_device,
             max_output_tokens=4096,
         )
-        result = await asyncio.to_thread(ModelRoutingService().run, request, self.correlation_id)
+        result = await asyncio.to_thread(self.routing_service().run, request, self.correlation_id)
         if result.status != "DONE" or result.output is None:
             raise ValueError("Controlled model routing failure.")
         import json
@@ -66,7 +77,7 @@ class RoutedModelProvider(ModelProvider):
                 "attendee": attendee.model_dump(mode="json"),
             },
         )
-        result = await asyncio.to_thread(ModelRoutingService().run, request, self.correlation_id)
+        result = await asyncio.to_thread(self.routing_service().run, request, self.correlation_id)
         if result.status != "DONE" or result.output is None:
             raise ValueError("Controlled draft routing failure.")
         import json

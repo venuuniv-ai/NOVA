@@ -296,6 +296,7 @@ export default function NovaWorkspace({ view, taskId }: { view: View; taskId?: s
         <Link className={`nav-item ${view === "memory" ? "active" : ""}`} href={`/memory${suffix}`}><Layers3 size={17} />Memory Center</Link>
         <Link className="nav-item" href="/evals"><Layers3 size={17} />Evaluation Lab</Link>
         <Link className="nav-item" href="/operations"><Layers3 size={17} />Local Operations</Link>
+        <Link className="nav-item" href="/inference"><Layers3 size={17} />Local Inference</Link>
         <Link className="nav-item" href="/auth"><Layers3 size={17} />Authentication</Link>
         {task ? <Link className={`nav-item ${view === "detail" ? "active" : ""}`} href={`/tasks/${task.id}`}><FileText size={17} />Task detail{view === "detail" && <span className="nav-dot" />}</Link> : <span className="nav-item disabled"><FileText size={17} />Task detail</span>}
       </nav>

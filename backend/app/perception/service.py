@@ -192,9 +192,11 @@ class PerceptionOrchestrator:
                     processor = ProcessorRun(
                         id=uuid4(),
                         perception_run_id=run.id,
-                        processor="FIXTURE_VLM",
+                        processor="FIXTURE_VLM"
+                        if response.provider == "fixture-vlm"
+                        else "LOCAL_VLM",
                         model=response.model or "NOT_CONFIGURED",
-                        simulation=True,
+                        simulation=response.provider == "fixture-vlm",
                         status="FAILED",
                         latency_ms=response.latency_ms,
                         safe_error=response.safe_error,
@@ -203,15 +205,12 @@ class PerceptionOrchestrator:
                     if response.status == "DONE" and response.output:
                         try:
                             visual = VisionOutput.model_validate(response.output)
-                            if (
-                                any(
-                                    o.processor != "FIXTURE_VLM"
-                                    or o.model != response.model
-                                    or not o.simulation
-                                    for o in visual.observations
-                                )
-                                or not fixture
-                            ):
+                            if any(
+                                o.processor != processor.processor
+                                or o.model != response.model
+                                or o.simulation != processor.simulation
+                                for o in visual.observations
+                            ) or (processor.simulation and not fixture):
                                 raise ValueError("Invalid VLM provenance")
                             for item in visual.observations:
                                 session.add(

@@ -2,6 +2,7 @@
 
 import app.evaluation.models  # noqa: F401
 import app.events.models  # noqa: F401
+import app.inference.models  # noqa: F401
 import app.intelligence.models  # noqa: F401
 import app.memory.models  # noqa: F401
 import app.model_routing.models  # noqa: F401

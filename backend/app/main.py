@@ -17,6 +17,7 @@ from app.database import get_session
 from app.evaluation.api import router as evaluation_router
 from app.events import outbox  # noqa: F401 — transaction hook
 from app.events.api import router as events_router
+from app.inference.api import router as inference_router
 from app.intelligence.api import router as intelligence_router
 from app.intelligence.models import AgentExecution
 from app.intelligence.orchestrator import recover_interrupted_executions
@@ -45,6 +46,9 @@ async def lifespan(app: FastAPI):
     from app.telemetry import configure
 
     configure()
+    from app.inference.service import recover
+
+    recover()
     recover_interrupted_executions()
     recover_model_calls()
     recover_perception()
@@ -62,6 +66,8 @@ app.include_router(model_router)
 app.include_router(perception_router)
 app.include_router(memory_router)
 app.include_router(evaluation_router)
+
+app.include_router(inference_router)
 app.include_router(events_router)
 app.include_router(device_security_router)
 

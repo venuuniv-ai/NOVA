@@ -1,6 +1,7 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = ["real_model: requires explicit approved local runtime and resource preflight"]
 
 [tool.ruff]
 target-version = "py312"

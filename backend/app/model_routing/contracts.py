@@ -11,7 +11,16 @@ Privacy = Literal["PUBLIC", "INTERNAL", "PERSONAL", "SENSITIVE_LOCAL_ONLY"]
 Complexity = Literal["LOW", "MEDIUM", "HIGH", "REASONING"]
 Tier = Literal["FIXTURE", "SMALL", "FRONTIER", "REASONING", "VISION", "LOCAL"]
 Capability = Literal["TEXT", "STRUCTURED", "REASONING", "REASONING_REPLAY", "VISION"]
-Purpose = Literal["SUMMARY", "PLANNING", "CRITIQUE", "CONTEXT", "COMMUNICATION", "VISUAL_CONTEXT"]
+Purpose = Literal[
+    "SUMMARY",
+    "PLANNING",
+    "CRITIQUE",
+    "CONTEXT",
+    "COMMUNICATION",
+    "VISUAL_CONTEXT",
+    "GROUNDED",
+    "GROUNDED_SELECTION",
+]
 ErrorCode = Literal[
     "TIMEOUT",
     "UNAVAILABLE",
