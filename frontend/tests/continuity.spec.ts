@@ -55,6 +55,9 @@ test("real backend continuity survives browser refresh and historical retry", as
   await expect(page.locator(".device-node.current h3")).toHaveText("Desktop");
 
   await page.getByRole("link", { name: "Device continuity", exact: true }).click();
+  // Confirm the destination has mounted before mutating its task. The old page
+  // can remain visible while the client route transition is still in progress.
+  await expect(page.getByRole("heading", { name: "Device continuity.", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Continue on Wearable" }).click();
   await expect(page.locator(".device-node.current h3")).toHaveText("Wearable");
   await expect(page.getByTestId("identity-id")).toHaveText(taskId);

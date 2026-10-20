@@ -249,3 +249,27 @@ verified citation/source/privacy/current permissions, one DONE job and one pendi
 proposal with zero approvals/executions. Final-source cross-stack qualification
 passed. Phase 10 is COMPLETE for this bounded local scope; cleanup verified, real
 settings disabled. No further inference, external action or Phase 11 is authorized.
+
+Phase 11 extends operational visibility with bounded event/job pagination using
+immutable outbox sequences and an append high-water mark. Owner/task checks and
+existing operator RBAC remain authoritative. Fixed diagnostics expose terminal
+metadata, not source text or inferred model failure causes. The operations UI
+supports independent continuation, refresh and stale-response suppression.
+The local qualification entrypoint uses dedicated project data, existing images,
+explicit disjoint private subnets, unchanged internal network flags/resource caps,
+fixture providers and staged services. It captures truthful partial/failure results
+and stops only task-owned processes/services, preserving volumes. No model/action
+endpoint, schema migration or approval authority is added. See the Phase 11
+architecture/audit for exact evidence and retained limits; Phase 8 deployment
+qualification is unchanged.
+
+
+October 20 local MVP release: the prepared-host fixture-default candidate is READY,
+with full Phase 11 offline qualification and fresh authenticated lifecycle smoke.
+The lifecycle entrypoint uses a dedicated persistent project, private local
+credentials/device-version enrollment, unchanged service caps and a native standalone
+frontend. A sampled watchdog stops only owned services/processes on unsafe resources;
+source drift refuses before launch. Real model configuration remains disabled and
+no external action is enabled. Source archive/manifest, guide, release checklist and
+measured evidence define the exact bounded readiness; no production deployment or
+new learned-model acceptance is implied.

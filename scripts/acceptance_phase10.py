@@ -7,6 +7,7 @@ Optional recovery stops/restarts only its proactive worker, preserving overlays.
 import argparse
 import json
 import os
+import re
 import subprocess
 import time
 import urllib.error
@@ -18,6 +19,12 @@ from uuid import uuid4
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
+
+
+def isolated_project(project):
+    return project.startswith("nova-phase10-") or bool(
+        re.fullmatch(r"nova-phase11-q-[a-f0-9]{12}", project)
+    )
 
 
 def main():
@@ -41,8 +48,8 @@ def main():
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     project = os.environ.get("COMPOSE_PROJECT_NAME", "")
     if args.recovery or args.inject_duplicates:
-        if not project.startswith("nova-phase10-") or not os.environ.get("COMPOSE_FILE"):
-            raise ValueError("Explicit isolated nova-phase10- Compose project/files required")
+        if not isolated_project(project) or not os.environ.get("COMPOSE_FILE"):
+            raise ValueError("Explicit isolated qualification Compose project/files required")
 
     def call(path, body=None, credential=token, expected=200):
         request = urllib.request.Request(

@@ -1,9 +1,12 @@
 # NOVA Core
 
-**Current status, October 20: Phase 10 COMPLETE within its bounded local scope.**
-Final-source qualification and the authorized one-generation R2 acceptance passed.
-Services/models are stopped; real configuration is disabled. See the
-[current audit](docs/phase-10-implementation-audit.md).
+**NOVA v1.0 local MVP: READY on the prepared local host — FIXTURE AI default;
+real inference disabled.** Phase 10 is checkpointed and Phase 11 offline qualification
+passed. Startup, authentication, grounded fixture workflows, drafts/HITL, recovery
+and shutdown were verified without additional real inference. Services are stopped
+after validation. See the [local release guide](docs/local-release-guide.md) and
+[test evidence](docs/local-release-test-evidence.md).
+
 Earlier phase introductions below retain their historical scope.
 
 **Phase 8 local infrastructure.**
@@ -553,3 +556,43 @@ Temporary credentials were revoked; scoped real settings disabled, attestations
 closed and model/task services stopped. Data, vectors, artifacts and volumes are
 preserved. The single authorized R2 attempt is consumed; no additional inference,
 Git checkpoint, deployment or Phase 11 follows from completion.
+
+## Phase 11 local reliability and operational qualification
+
+Phase 11 adds bounded event/job pages to Local Operations, with owner-scoped
+sequence cursors, a captured append boundary and metadata-only diagnostics.
+The UI supports independent page continuation, refresh, safe errors and stale-task
+response suppression. Draft authority and source/privacy checks remain unchanged.
+
+Run `python3 scripts/qualify_phase11.py` for the staged local qualification, using
+existing images and installed tools. It refuses competing containers/listeners,
+unsafe resources, protected data mounts and real-provider settings. It creates a
+fresh isolated project with collision-checked private subnets, preserves existing
+network restrictions, records ignored per-stage evidence, and stops its own
+services without deleting volumes. `--stages` supports focused checks; a subset
+success is explicitly PARTIAL_PASS. No model generation is part of this command.
+
+See the [Phase 11 architecture](docs/phase-11-architecture.md),
+[audit](docs/phase-11-implementation-audit.md) and
+[test evidence](docs/phase-11-test-evidence.md) for current acceptance and limits.
+Phase 11 changes remain uncommitted pending separate checkpoint authorization.
+
+
+## Launch the verified local candidate
+
+```sh
+./scripts/start-local.sh
+python3 scripts/nova_local.py status
+pbcopy < .secrets/release-v1/operator.token
+# Open http://localhost:3000/auth and paste the private short-lived token.
+# When finished:
+./scripts/stop-local.sh
+```
+
+No package installation, image pull/build, cloud service, model load or external
+action is performed by startup. Existing dependencies are required; the installed
+native frontend is built only if needed. For smoke, credential refresh, recovery,
+rollback and deferred P1/P2 items, use the release guide/checklist. The source
+candidate is 1.0.0-local-rc1; working changes remain uncommitted and are protected
+by the reviewed runtime source manifest. Phase 11 completion is bounded offline
+qualification, not production or general model-quality sign-off.

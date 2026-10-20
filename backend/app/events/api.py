@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
@@ -44,14 +44,55 @@ def subscribe(task_id: UUID):
 
 
 @router.get("/tasks/{task_id}")
-def task_events(task_id: UUID):
+def task_events(
+    task_id: UUID,
+    limit: int = Query(default=50, ge=1, le=100),
+    after: int = Query(default=0, ge=0, le=9223372036854775807),
+    jobs_after: int = Query(default=0, ge=0, le=9223372036854775807),
+    through: int | None = Query(default=None, ge=0, le=9223372036854775807),
+):
+    # Sequence cursors use the immutable outbox order, including for jobs. The
+    # high-water mark excludes newly appended events while paging this view.
     with SessionLocal() as session:
         find_task(session, task_id)
+        user = current_user_id()
+        scope = (Outbox.task_id == task_id, Outbox.user_id == user)
+        latest = session.scalar(select(func.max(Outbox.sequence)).where(*scope)) or 0
+        ceiling = min(through, latest) if through is not None else latest
         events = list(
             session.scalars(
-                select(Outbox).where(Outbox.task_id == task_id).order_by(Outbox.sequence)
+                select(Outbox)
+                .where(*scope, Outbox.sequence > after, Outbox.sequence <= ceiling)
+                .order_by(Outbox.sequence)
+                .limit(limit + 1)
             )
         )
+        more_events = len(events) > limit
+        events = events[:limit]
+        ids = [e.id for e in events]
+        consumers = {}
+        for event_id, consumer in session.execute(
+            select(Inbox.event_id, Inbox.consumer).where(
+                Inbox.event_id.in_(ids),
+                Inbox.consumer.in_(["projection", "proactive", "audit"]),
+            )
+        ):
+            consumers.setdefault(event_id, []).append(consumer)
+        jobs = session.execute(
+            select(Job, Outbox.sequence)
+            .join(Outbox, Job.event_id == Outbox.id)
+            .where(
+                *scope,
+                Job.user_id == user,
+                Job.task_id == task_id,
+                Outbox.sequence > jobs_after,
+                Outbox.sequence <= ceiling,
+            )
+            .order_by(Outbox.sequence)
+            .limit(limit + 1)
+        ).all()
+        more_jobs = len(jobs) > limit
+        jobs = jobs[:limit]
         projection = session.get(Projection, task_id)
         return {
             "task_id": str(task_id),
@@ -62,22 +103,31 @@ def task_events(task_id: UUID):
                     "type": e.event_type,
                     "state": e.state,
                     "attempts": e.attempts,
-                    "consumers": list(
-                        session.scalars(select(Inbox.consumer).where(Inbox.event_id == e.id))
-                    ),
+                    "consumers": sorted(consumers.get(e.id, [])),
                 }
                 for e in events
             ],
-            "projection_sequence": projection.last_sequence if projection else None,
+            "projection_sequence": (
+                projection.last_sequence if projection and projection.user_id == user else None
+            ),
             "jobs": [
                 {
                     "id": str(j.id),
                     "state": j.state,
                     "attempts": j.attempts,
+                    "sequence": sequence,
                     "result_id": str(j.result_id) if j.result_id else None,
+                    "diagnostic": "TERMINAL_JOB_FAILURE" if j.state == "DEAD" else None,
                 }
-                for j in session.scalars(select(Job).where(Job.task_id == task_id))
+                for j, sequence in jobs
             ],
+            "page": {
+                "limit": limit,
+                "through": ceiling,
+                "next_after": events[-1].sequence if more_events else None,
+                "next_jobs_after": jobs[-1][1] if more_jobs else None,
+            },
+            "diagnostic_boundary": "METADATA ONLY / NOT A MODEL FAILURE EXPLANATION",
         }
 
 

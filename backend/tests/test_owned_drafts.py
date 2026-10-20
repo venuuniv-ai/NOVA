@@ -727,3 +727,28 @@ def test_stale_internal_processor_refreshes_job_after_owner_serialization(task, 
     with SessionLocal() as session:
         assert session.scalar(select(func.count()).select_from(ActionProposal)) == 1
         assert session.get(Job, job_id).state == "DONE"
+
+
+def test_manual_retry_and_redelivery_cannot_repeat_interrupted_real_job(task, client, monkeypatch):
+    """Ambiguous RUNNING generation is never repeated, even after manual job retry."""
+    row, _, payload = queued(task)
+    job_id = deliver(row)
+    with SessionLocal.begin() as session:
+        context = session.get(drafts.ContextEvent, row["id"])
+        context.payload = {**context.payload, "mode": "LOCAL_REAL", "state": "RUNNING"}
+        session.get(Job, job_id).state = "DEAD"
+    monkeypatch.setenv("OWNED_DRAFT_MODE", "LOCAL_REAL")
+
+    def forbidden(*args):
+        raise AssertionError("Interrupted real work must never reacquire a provider")
+
+    monkeypatch.setattr(drafts, "selected", forbidden)
+    assert client.post(f"/api/v1/operations/jobs/{job_id}/retry").status_code == 200
+    OwnedDraftService().process(job_id)
+    assert OwnedDraftService().read(row["id"])["state"] == "FAILED"
+    assert client.post(f"/api/v1/operations/jobs/{job_id}/retry").status_code == 200
+    OwnedDraftService().process(job_id)
+    with SessionLocal() as session:
+        assert session.get(Job, job_id).state == "DEAD"
+        for model in (ActionProposal, ApprovalDecision, ActionExecution):
+            assert session.scalar(select(func.count()).select_from(model)) == 0
