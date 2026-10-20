@@ -1,6 +1,12 @@
 # NOVA Core
 
-**Current implementation: Phase 8 local infrastructure.**
+**Current status, October 20: Phase 10 COMPLETE within its bounded local scope.**
+Final-source qualification and the authorized one-generation R2 acceptance passed.
+Services/models are stopped; real configuration is disabled. See the
+[current audit](docs/phase-10-implementation-audit.md).
+Earlier phase introductions below retain their historical scope.
+
+**Phase 8 local infrastructure.**
 The authenticated local overlay adds a Go gateway, server-owned RBAC/resource
 ownership, revocable simulated device identities, an atomic PostgreSQL outbox,
 real local Kafka consumers and draft-only proactive jobs. Open `/operations` for
@@ -514,3 +520,36 @@ FIXTURE and legacy EXTRACTIVE_V1 remain defaults; real activation requires a new
 approval and fresh resource checks. No automatic downloads, paid services or external
 messages. The [staging manifest](docs/phase-9-staging-manifest.md) is prepared for review;
 nothing has been staged or committed. Phase 10 has not started.
+
+## Phase 10 owned evidence drafts
+
+Phase 9 was subsequently checkpointed locally at
+`7765b33736c28ccc560fc8269bb5fc4b9b050518`; its audit remains historical evidence.
+Phase 10 now extends existing jobs, proposals and Approval Center with explicitly
+requested, owned preference drafts. Named cuisine/beverage questions can select
+eligible owned memories automatically or use supplied memory references. Context
+and source bindings, current authorization and conflicts are checked before
+generation and before the atomic proposal/job commit. Cancellation, expiry,
+rejection, duplicate delivery and interrupted processing are handled durably.
+
+FIXTURE remains the default. Phase 10 drafts stop at PENDING_APPROVAL; approval,
+editing and execution are disabled for this contract. No external action is sent.
+The private managed SELECTION_V1 adapter passed the authorized R2 real case:
+Qwen generated `noodles`, index 0; the application independently verified original
+citation, source binding, current permissions/privacy and conflicts. One DONE job
+created one PENDING_APPROVAL proposal, with no approval or execution. R1's earlier
+swap failure remains historical. The Desktop registration stays enabled/version 1.
+
+Final-source qualification passed: 750 backend tests/one explicit real-model skip,
+17 controller tests, Go race/vet, frontend lint/typecheck/build, 58 browser cases
+across four passing invocations, Kafka/recovery and golden baselines. This qualifies
+the named-preference drafting subset, not general autonomous reasoning, semantic
+entailment, model quality or production deployment. See the
+[architecture](docs/phase-10-architecture.md),
+[audit](docs/phase-10-implementation-audit.md) and
+[R2 outcome](docs/phase-10-real-acceptance-proposal-r2.md).
+
+Temporary credentials were revoked; scoped real settings disabled, attestations
+closed and model/task services stopped. Data, vectors, artifacts and volumes are
+preserved. The single authorized R2 attempt is consumed; no additional inference,
+Git checkpoint, deployment or Phase 11 follows from completion.

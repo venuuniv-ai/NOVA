@@ -87,7 +87,11 @@ def authenticate(headers):
             ):
                 deny("DEVICE_REVOKED")
             return Principal(
-                identity.user_id, frozenset(identity.roles), device_id, settings.auth_mode
+                identity.user_id,
+                frozenset(identity.roles),
+                device_id,
+                settings.auth_mode,
+                identity.id,
             )
     except (jwt.PyJWTError, ValueError, KeyError, TypeError, OSError):
         deny()

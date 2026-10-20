@@ -105,6 +105,11 @@ class Residency:
         try:
             with self.lock:
                 self.check(token, model)
+                try:
+                    self.resource()
+                except Exception:
+                    self._stop()
+                    raise
             result = invoke()
             with self.lock:
                 self.check(token, model)
@@ -132,11 +137,21 @@ class Runtime:
         self.process = None
         self.ids = set()
         self.model = None
-        self.peak = 0
+        self.peak = None
         self.records = []
         self.failed = None
         self.request_deadline = None
+        self.last_resources = None
+        self.record_lock = threading.Lock()
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+    def persist(self):
+        # Write transitions before/after inference, not only after successful unload.
+        with self.record_lock:
+            target = self.evidence / "residency.json"
+            temporary = target.with_suffix(".json.tmp")
+            temporary.write_text(json.dumps(self.records, indent=2))
+            temporary.replace(target)
 
     def resources(self):
         import shutil
@@ -147,9 +162,14 @@ class Runtime:
             )[1]
         )
         free = shutil.disk_usage(self.root).free
+        self.last_resources = {
+            "swap_mib": swap,
+            "free_disk_bytes": free,
+            "measured_at": time.time(),
+        }
         if swap >= 2048 or free < 5 * 1024**3:
             raise RuntimeError("RESOURCE_GATE")
-        return {"swap_mib": swap, "free_disk_bytes": free, "measured_at": time.time()}
+        return self.last_resources
 
     def request(self, port, path, body=None, timeout=1):
         req = urllib.request.Request(
@@ -171,11 +191,12 @@ class Runtime:
             with socket.socket() as sock:
                 if sock.connect_ex(("127.0.0.1", port)) == 0:
                     raise RuntimeError("UNOWNED_RUNTIME_PRESENT")
-        self.model, self.peak = model, 0
+        self.model, self.peak = model, None
         before = self.resources()
         self.records.append(
             {"model": model, "before": before, "started_at": time.time(), "state": "STARTING"}
         )
+        self.persist()
         artifact = (
             self.root / ".local/phase9/models/bge-small-en-v1.5/model.safetensors"
             if model == "bge-small-en-v1.5"
@@ -261,13 +282,23 @@ class Runtime:
                 self.records[-1].update(
                     state="READY", ready_at=time.time(), load_seconds=time.monotonic() - started
                 )
-                return
             except (OSError, TimeoutError):
                 time.sleep(0.05)
+                continue
+            self.persist()
+            return
         raise RuntimeError("STARTUP_TIMEOUT")
 
     def monitor(self):
-        self.resources()
+        try:
+            self.resources()
+        except RuntimeError:
+            if self.records:
+                self.records[-1].update(
+                    resource_refused_at=time.time(), last_resources=self.last_resources
+                )
+                self.persist()
+            raise
         if self.request_deadline is not None and time.monotonic() >= self.request_deadline:
             raise RuntimeError("INFERENCE_DEADLINE")
         if self.failed:
@@ -275,7 +306,7 @@ class Runtime:
         if self.process:
             ids, rss = processes(self.process.pid)
             self.ids.update(ids)
-            self.peak = max(self.peak, rss)
+            self.peak = max(self.peak or 0, rss)
             limit = 1024 if self.model == "bge-small-en-v1.5" else 2048
             if rss > limit * 1024**2:
                 raise RuntimeError("MEMORY_LIMIT")
@@ -325,21 +356,33 @@ class Runtime:
             remaining &= live
             if remaining:
                 time.sleep(0.05)
-        self.records[-1].update(
-            peak_rss_bytes=self.peak,
-            stopped=True,
-            shutdown_seconds=time.monotonic() - started,
-            stopped_at=time.time(),
-            after=self.resources(),
-        )
-        (self.evidence / "residency.json").write_text(json.dumps(self.records, indent=2))
-        self.process, self.model, self.ids = None, None, set()
-        if remaining:
-            raise RuntimeError("TERMINATION_UNVERIFIED")
+        listeners = []
         for port in (11434, 11435):
             with socket.socket() as sock:
                 if sock.connect_ex(("127.0.0.1", port)) == 0:
-                    raise RuntimeError("LISTENER_REMAINS")
+                    listeners.append(port)
+        resource_error = None
+        try:
+            after = self.resources()
+        except Exception as error:
+            # Unsafe/missing measurements must not skip cleanup or erase evidence.
+            resource_error, after = error, self.last_resources
+        self.records[-1].update(
+            peak_rss_bytes=self.peak,
+            stopped=not remaining and not listeners,
+            shutdown_seconds=time.monotonic() - started,
+            stopped_at=time.time(),
+            after=after,
+            after_resource_error="RESOURCE_CHECK_FAILED" if resource_error else None,
+        )
+        try:
+            self.persist()
+        finally:
+            self.process, self.model, self.ids = None, None, set()
+        if remaining or listeners:
+            raise RuntimeError("TERMINATION_UNVERIFIED")
+        if resource_error:
+            raise resource_error
 
 
 def serve(root, key_path, evidence=None):
@@ -405,10 +448,12 @@ def serve(root, key_path, evidence=None):
                     raise ValueError("ROUTE_INVALID")
 
                 def invoke():
+                    runtime.monitor()  # Refuse changed resources before transport/loading.
                     runtime.request_deadline = time.monotonic() + 8
                     try:
                         started = time.monotonic()
                         runtime.records[-1]["inference_started_at"] = time.time()
+                        runtime.persist()
                         result = runtime.request(port, self.path, body, timeout=8)
                         record = runtime.records[-1]
                         record["inference_seconds"] = time.monotonic() - started
@@ -419,6 +464,7 @@ def serve(root, key_path, evidence=None):
                             for k in ("prompt_tokens", "completion_tokens", "total_tokens")
                             if type(usage.get(k)) is int and 0 <= usage[k] <= 131072
                         }
+                        runtime.persist()
                         return result
                     finally:
                         runtime.request_deadline = None

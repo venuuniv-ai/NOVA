@@ -257,6 +257,12 @@ class ProactiveService:
         return proposal
 
     def expire(self, session, proposal, correlation_id):
+        if proposal.policy_version == "OWNED_CONTEXT_V1":
+            from app.proactive.drafts import event_for, invalidate
+
+            row = event_for(session, proposal.situation["context_event_id"])
+            invalidate(session, row)
+            return
         approval = session.scalar(
             select(ApprovalDecision).where(ApprovalDecision.proposal_id == proposal.id)
         )
@@ -279,19 +285,29 @@ class ProactiveService:
             select(ActionExecution).where(ActionExecution.proposal_id == proposal.id)
         )
         return ProposalDetail(
-            proposal=ProposalRead.model_validate(proposal),
+            proposal=self.proposal_read(proposal),
             approval=ApprovalRead.model_validate(approval) if approval else None,
             execution=ExecutionRead.model_validate(execution) if execution else None,
         )
 
+    def proposal_read(self, proposal):
+        result = ProposalRead.model_validate(proposal)
+        if proposal.policy_version == "OWNED_CONTEXT_V1":
+            result.clock_mode = "SYSTEM"
+            if proposal.status != "PENDING_APPROVAL":
+                result.content = "Draft unavailable; context is no longer active."
+        return result
+
     def get(self, proposal_id, correlation_id):
         with SessionLocal.begin() as session:
+            session.scalar(select(User.id).where(User.id == current_user_id()).with_for_update())
             proposal = self.find_proposal(session, proposal_id, True)
             self.expire(session, proposal, correlation_id)
             return self.detail(session, proposal)
 
     def list_proposals(self, task_id, correlation_id):
         with SessionLocal.begin() as session:
+            session.scalar(select(User.id).where(User.id == current_user_id()).with_for_update())
             find_task(session, task_id)
             proposals = session.scalars(
                 select(ActionProposal)
@@ -303,7 +319,7 @@ class ProactiveService:
             ).all()
             for proposal in proposals:
                 self.expire(session, proposal, correlation_id)
-            return [ProposalRead.model_validate(proposal) for proposal in proposals]
+            return [self.proposal_read(proposal) for proposal in proposals]
 
     def _deny(self, session, proposal, correlation_id, code):
         self.audit(session, "ACTION_EXECUTION_FAILED", proposal, correlation_id, reason=code)
@@ -336,6 +352,18 @@ class ProactiveService:
             and operation in {"approve", "execute"}
         ):
             fail(409, "SHADOW_ACTION_BLOCKED", "Shadow simulations cannot approve or execute.")
+        with SessionLocal() as session:
+            draft = self.find_proposal(session, proposal_id)
+            if draft.policy_version == "OWNED_CONTEXT_V1":
+                if operation != "reject":
+                    fail(
+                        409,
+                        "DRAFT_ONLY",
+                        "This workflow stops at pending approval; execution is disabled.",
+                    )
+                from app.proactive.drafts import OwnedDraftService
+
+                return OwnedDraftService().reject(proposal_id, payload)
         digest = request_hash(
             operation, payload.model_dump(mode="json", exclude={"idempotency_key"})
         )

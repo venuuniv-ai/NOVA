@@ -15,6 +15,7 @@ from app.proactive.contracts import (
     ProposalDetail,
     ProposalRead,
 )
+from app.proactive.drafts import DraftInput, OwnedDraftService
 from app.proactive.models import AuditEvent, ProactiveTrigger
 from app.proactive.service import ProactiveService
 from app.security.identity import current_user_id
@@ -29,6 +30,26 @@ def get_service():
 
 
 Service = Annotated[ProactiveService, Depends(get_service)]
+
+
+@router.post("/proactive/drafts", status_code=202)
+def create_draft(payload: DraftInput):
+    return OwnedDraftService().create(payload)
+
+
+@router.get("/tasks/{task_id}/drafts")
+def drafts(task_id: UUID):
+    return OwnedDraftService().list(task_id)
+
+
+@router.get("/proactive/drafts/{draft_id}")
+def read_draft(draft_id: UUID):
+    return OwnedDraftService().read(draft_id)
+
+
+@router.post("/proactive/drafts/{draft_id}/cancel")
+def cancel_draft(draft_id: UUID):
+    return OwnedDraftService().cancel(draft_id)
 
 
 @router.post("/proactive/evaluate", response_model=EvaluationRead)

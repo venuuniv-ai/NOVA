@@ -227,3 +227,25 @@ real configuration is disabled and services are stopped. New activation still
 requires approval and resource checks. See
 [Phase 9 details](phase-9-architecture.md). The Phase 8
 Kubernetes and NetworkPolicy qualifications remain unchanged.
+
+Phase 10 adds owned evidence drafts using the existing proactive records and
+transactional event/job infrastructure. Explicit requests select eligible owned
+preference facts, generate a bounded draft and independently verify support and
+current source/permission bindings before committing a pending proposal. Drafts
+can expire, fail, be cancelled or rejected; this contract cannot approve or
+execute actions. Fixture mode is the default; separately authorized R2 real acceptance passed. See [Phase 10 architecture](phase-10-architecture.md).
+Owned-draft audit milestones use wall-clock UTC independently of the legacy demo
+clock. Request receipt is recorded with queue creation; evidence verification is
+recorded atomically with pending-proposal acceptance. October 20 final-source
+backend/browser qualification passed, including those regression checks. R1's
+source freeze was subsequently approved; its first preflight stopped at a missing
+device registration. Authorized recovery then enrolled the same owned Desktop
+through the existing API and verified version-bound credentials. Fresh real
+authorization subsequently permitted one R1 attempt. It failed the swap gate
+during Qwen loading; no completed answer was observed. Cleanup passed and real
+configuration is disabled. That R1 failure remains historical.
+October 20 R2 passed with one Qwen-generated supported value/index, independently
+verified citation/source/privacy/current permissions, one DONE job and one pending
+proposal with zero approvals/executions. Final-source cross-stack qualification
+passed. Phase 10 is COMPLETE for this bounded local scope; cleanup verified, real
+settings disabled. No further inference, external action or Phase 11 is authorized.

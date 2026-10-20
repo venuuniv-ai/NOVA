@@ -108,6 +108,33 @@ def _consume(raw, consumer="projection"):
                 )
             if (
                 consumer == "proactive"
+                and message.event_type == "ContextEvent.changed"
+                and message.task_id
+            ):
+                from app.proactive.drafts import SOURCE
+                from app.proactive.models import ContextEvent
+
+                context = session.get(ContextEvent, UUID(message.payload["resource_id"]))
+                if (
+                    context
+                    and context.source == SOURCE
+                    and context.user_id == message.user_id
+                    and context.task_id == message.task_id
+                ):
+                    session.execute(
+                        insert(Job)
+                        .values(
+                            event_id=message.id,
+                            task_id=context.task_id,
+                            user_id=context.user_id,
+                            state="PENDING",
+                            attempts=0,
+                            updated_at=datetime.now(UTC),
+                        )
+                        .on_conflict_do_nothing()
+                    )
+            if (
+                consumer == "proactive"
                 and message.task_id
                 and message.payload.get("transition") == "HANDOFF_DESKTOP_TO_WEARABLE"
             ):
@@ -176,6 +203,15 @@ def work_one():
             try:
                 # This capability is draft-only. No call to approve/execute exists in this worker.
                 from app.proactive.contracts import ContextEventInput
+
+                with SessionLocal() as session:
+                    source = session.get(Outbox, event_id)
+                    owned_draft = source.event_type == "ContextEvent.changed"
+                if owned_draft:
+                    from app.proactive.drafts import OwnedDraftService
+
+                    OwnedDraftService().process(job_id)
+                    return True
 
                 result = ProactiveService().evaluate(
                     ContextEventInput(task_id=task_id, idempotency_key="event-" + str(event_id)),

@@ -18,12 +18,15 @@ TYPES = {
     "ActionExecution",
     "MemoryRecord",
     "PerceptionRun",
+    "ContextEvent",
 }
 
 
 def record(mapper, connection, row):
     kind = type(row).__name__
     if _evaluation_schema.get() or kind not in TYPES:
+        return
+    if kind == "ContextEvent" and row.source != "OWNED_CONTEXT_V1":
         return
     task_id = row.id if isinstance(row, Task) else getattr(row, "task_id", None)
     owner = getattr(row, "user_id", None)
@@ -61,5 +64,7 @@ def after_insert(mapper, connection, row):
 
 @event.listens_for(Base, "after_update", propagate=True)
 def after_update(mapper, connection, row):
+    if type(row).__name__ == "ContextEvent":
+        return  # Emit one immutable trigger; state changes must not enqueue more jobs.
     if any(a.history.has_changes() for a in inspect(row).attrs):
         record(mapper, connection, row)

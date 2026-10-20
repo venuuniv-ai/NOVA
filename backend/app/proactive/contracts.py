@@ -79,6 +79,11 @@ class EditRequest(Mutation):
     recipient: Recipient
 
 
+class DraftSituation(Contract):
+    draft_contract: Literal["OWNED_CONTEXT_V1"]
+    context_event_id: UUID
+
+
 class ProposalRead(Contract):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
@@ -99,8 +104,8 @@ class ProposalRead(Contract):
     created_at: datetime
     expires_at: datetime
     supersedes_id: UUID | None
-    situation: Situation
-    clock_mode: Literal["FIXTURE"] = "FIXTURE"
+    situation: Situation | DraftSituation
+    clock_mode: Literal["FIXTURE", "SYSTEM"] = "FIXTURE"
 
 
 class ApprovalRead(Contract):

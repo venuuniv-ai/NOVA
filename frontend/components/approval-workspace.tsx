@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import OwnedDraftWorkspace from "@/components/owned-draft-workspace";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Task } from "@/lib/api";
 import type { Audit, Proposal, ProposalDetail, Trigger } from "@/lib/proactive";
@@ -108,11 +109,12 @@ export default function ApprovalWorkspace({ task, disabled, canMutate, isCurrent
     void mutate({ proposalId: proposal.id, operation, body: { idempotency_key: crypto.randomUUID(), ...changes } });
   }
   const blocked = disabled || busy || !!pending;
-  const surfaced = snapshot?.triggers.find(item => item.status === "SURFACED");
+  const surfaced = snapshot?.triggers.find(item => item.status === "SURFACED" && item.reason !== "OWNED_SUPPORTED_DRAFT");
 
   return <section className="approval-workspace" data-testid="approvals" data-task-id={task.id} aria-label="Proactive intelligence and approval control">
     <div className="panel-heading"><div><span className="eyebrow">PROACTIVE INTELLIGENCE / HUMAN APPROVAL</span><h2>{compact ? "Context worth your attention." : "Approval Center"}</h2></div><span className="tag">DEMO CONTEXT / FIXTURE CLOCK</span></div>
     {error && <div className="error-notice" role="alert"><p>{error}</p><button className="button ghost" onClick={() => void load()} disabled={busy}>Reload proposals</button></div>}
+    {!compact && <OwnedDraftWorkspace taskId={task.id} disabled={disabled} canMutate={canMutate} isCurrentTask={isCurrentTask ?? canMutate} />}
     {notice && <div className="success-notice" role="status">{notice}</div>}
     {pending && <div className="phase-notice"><p>{busy ? "Awaiting response. No decision is assumed." : "An action request is unacknowledged. Retry with its original key."}</p><button className="button ghost" disabled={busy || disabled || !snapshot} onClick={() => void mutate(pending)}>Retry original request</button></div>}
     {!snapshot ? <p role="status">Loading persisted proactive context…</p> : <>
@@ -121,12 +123,12 @@ export default function ApprovalWorkspace({ task, disabled, canMutate, isCurrent
         {!snapshot.proposals.length && <div className="empty-state"><h3>No action proposals</h3><p>{snapshot.triggers.at(-1)?.reason ?? "Waiting for the synthetic context event."}</p><p>Redis failure or cooldown suppresses suggestions safely. No action is authorized.</p><button className="button ghost" disabled={blocked} onClick={() => void evaluateNewContext()}>Evaluate new fixture event</button></div>}
         {snapshot.proposals.map(proposal => <article className="panel proposal-card" key={proposal.id} data-proposal-id={proposal.id}>
           <div className="panel-heading"><span className="eyebrow">PROACTIVE / {proposal.status === "PENDING_APPROVAL" ? "REQUIRES APPROVAL" : proposal.status}</span><span className="tag">{proposal.policy_decision}</span></div>
-          <h3>Notify attendee</h3><p>Recipient: {proposal.recipient} · MESSAGE / SIMULATION ONLY</p><blockquote>{proposal.content}</blockquote><p>{proposal.reason}</p>
-          <dl className="proposal-meta"><div><dt>PROPOSAL</dt><dd data-testid="proposal-id">{proposal.id}</dd></div><div><dt>TRACE</dt><dd>{proposal.trace_id}</dd></div><div><dt>PAYLOAD SHA-256</dt><dd>{proposal.payload_hash}</dd></div><div><dt>EXPIRES / FIXTURE CLOCK</dt><dd>{proposal.expires_at}</dd></div></dl>
+          <h3>{proposal.policy_version === "OWNED_CONTEXT_V1" ? "Suggested preference recommendation" : "Notify attendee"}</h3><p>Recipient: {proposal.recipient} · {proposal.policy_version === "OWNED_CONTEXT_V1" ? "LOCAL DRAFT / EXECUTION DISABLED" : "MESSAGE / SIMULATION ONLY"}</p><blockquote>{proposal.content}</blockquote><p>{proposal.reason}</p>
+          <dl className="proposal-meta"><div><dt>PROPOSAL</dt><dd data-testid="proposal-id">{proposal.id}</dd></div><div><dt>TRACE</dt><dd>{proposal.trace_id}</dd></div><div><dt>PAYLOAD SHA-256</dt><dd>{proposal.payload_hash}</dd></div><div><dt>EXPIRES / {proposal.policy_version === "OWNED_CONTEXT_V1" ? "SYSTEM CLOCK" : "FIXTURE CLOCK"}</dt><dd>{proposal.expires_at}</dd></div></dl>
           {edit?.id === proposal.id ? <form onSubmit={event => { event.preventDefault(); request(proposal, "edit", { content: edit.content, recipient: edit.recipient }); }}><label>Recipient<input aria-label="Edit recipient" required maxLength={120} value={edit.recipient} onChange={event => setEdit({ ...edit, recipient: event.target.value })} /></label><label>Draft<textarea aria-label="Edit draft" required maxLength={1000} value={edit.content} onChange={event => setEdit({ ...edit, content: event.target.value })} /></label><p>Creates a new proposal. Previous approval cannot authorize the edited draft.</p><button className="button primary" disabled={blocked}>Save new proposal</button><button type="button" className="button ghost" disabled={busy} onClick={() => setEdit(null)}>Cancel edit</button></form> : <div className="proposal-controls">
-            {["PENDING_APPROVAL", "APPROVED"].includes(proposal.status) && <button className="button ghost" disabled={blocked} onClick={() => setEdit({ id: proposal.id, content: proposal.content, recipient: proposal.recipient })}>Edit</button>}
-            {proposal.status === "PENDING_APPROVAL" && <><button className="button primary" disabled={blocked} onClick={() => request(proposal, "approve")}>Approve</button><button className="button ghost" disabled={blocked} onClick={() => request(proposal, "reject")}>Reject</button></>}
-            {proposal.status === "APPROVED" && <button className="button primary" disabled={blocked} onClick={() => request(proposal, "execute")}>Execute simulation</button>}
+            {proposal.policy_version !== "OWNED_CONTEXT_V1" && ["PENDING_APPROVAL", "APPROVED"].includes(proposal.status) && <button className="button ghost" disabled={blocked} onClick={() => setEdit({ id: proposal.id, content: proposal.content, recipient: proposal.recipient })}>Edit</button>}
+            {proposal.status === "PENDING_APPROVAL" && <>{proposal.policy_version !== "OWNED_CONTEXT_V1" && <button className="button primary" disabled={blocked} onClick={() => request(proposal, "approve")}>Approve</button>}<button className="button ghost" disabled={blocked} onClick={() => request(proposal, "reject")}>Reject</button></>}
+            {proposal.policy_version !== "OWNED_CONTEXT_V1" && proposal.status === "APPROVED" && <button className="button primary" disabled={blocked} onClick={() => request(proposal, "execute")}>Execute simulation</button>}
           </div>}
           {proposal.status === "EXECUTED" && <div className="success-notice">SIMULATED DELIVERY COMPLETE · NO EXTERNAL MESSAGE WAS SENT</div>}
           {proposal.status === "SUPERSEDED" && <p>Superseded. Any previous approval is unusable.</p>}

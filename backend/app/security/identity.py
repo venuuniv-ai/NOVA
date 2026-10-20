@@ -11,6 +11,7 @@ class Principal:
     roles: frozenset[str]
     device_id: UUID | None = None
     mode: str = "demo"
+    identity_id: UUID | None = None
 
 
 principal = ContextVar("nova_principal", default=None)

@@ -119,6 +119,19 @@ class ResidencyTests(unittest.TestCase):
 
 
 class InferenceAdmissionTests(unittest.TestCase):
+    def test_swap_changes_after_acquire_refuse_before_generation(self):
+        from unittest.mock import Mock
+
+        resource = Mock(side_effect=[None, RuntimeError("RESOURCE_GATE")])
+        stop, invoke = Mock(), Mock()
+        r = Residency(lambda _: None, stop, resource)
+        token = r.acquire("qwen")
+        with self.assertRaisesRegex(RuntimeError, "RESOURCE_GATE"):
+            r.infer(token, "qwen", invoke)
+        invoke.assert_not_called()
+        stop.assert_called_once()
+        self.assertIsNone(r.token)
+
     def test_duplicate_lease_cannot_queue_or_replace_runtime(self):
         import threading
 
@@ -158,6 +171,103 @@ class InferenceAdmissionTests(unittest.TestCase):
 
 
 class ProcessTerminationTests(unittest.TestCase):
+    def refused_child(self, folder):
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        from phase9_residency import Runtime
+
+        runtime = Runtime(Path(folder), Path(folder))
+        # A tiny Python sleeper stands for loading; no model/framework is used.
+        runtime.model = "bge-small-en-v1.5"
+        runtime.records = [{"state": "STARTING"}]
+        runtime.process = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+        return runtime, runtime.process
+
+    def test_swap_exceeded_during_loading_records_refusal_and_terminates(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import Mock
+
+        with tempfile.TemporaryDirectory() as folder:
+            runtime, child = self.refused_child(folder)
+            runtime.last_resources = {"swap_mib": 2100, "free_disk_bytes": 10 * 1024**3}
+            runtime.resources = Mock(side_effect=RuntimeError("RESOURCE_GATE"))
+            runtime.persist()
+            r = Residency(lambda _: None, runtime.stop, lambda: None)
+            token = r.acquire("qwen")
+            try:
+                with self.assertRaisesRegex(RuntimeError, "RESOURCE_GATE"):
+                    runtime.monitor()
+                with self.assertRaisesRegex(RuntimeError, "RESOURCE_GATE"):
+                    r.release(token)
+                record = json.loads((Path(folder) / "residency.json").read_text())[0]
+                self.assertEqual(record["last_resources"]["swap_mib"], 2100)
+                self.assertTrue(record["stopped"])
+                self.assertEqual(record["after_resource_error"], "RESOURCE_CHECK_FAILED")
+                self.assertNotIn("inference_started_at", record)
+                self.assertIsNotNone(child.poll())
+                self.assertIsNone(runtime.process)
+                self.assertTrue(r.poisoned)
+                with self.assertRaisesRegex(RuntimeError, "RESIDENCY_UNAVAILABLE"):
+                    r.acquire("qwen")
+            finally:
+                if child.poll() is None:
+                    child.kill()
+                    child.wait(timeout=2)
+
+    def test_record_write_failure_still_terminates_and_poisons(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as folder:
+            runtime, child = self.refused_child(folder)
+            runtime.resources = lambda: {"swap_mib": 0, "free_disk_bytes": 10 * 1024**3}
+            runtime.persist()
+            r = Residency(lambda _: None, runtime.stop, lambda: None)
+            token = r.acquire("qwen")
+            try:
+                with patch.object(Path, "replace", side_effect=PermissionError("unavailable")):
+                    with self.assertRaises(PermissionError):
+                        r.release(token)
+                self.assertIsNotNone(child.poll())
+                self.assertIsNone(runtime.process)
+                self.assertTrue(r.poisoned)
+                # The last valid file survives failed atomic replacement, without
+                # falsely claiming that its STARTING record verifies termination.
+                record = json.loads((Path(folder) / "residency.json").read_text())[0]
+                self.assertEqual(record, {"state": "STARTING"})
+                with self.assertRaisesRegex(RuntimeError, "RESIDENCY_UNAVAILABLE"):
+                    r.acquire("qwen")
+            finally:
+                if child.poll() is None:
+                    child.kill()
+                    child.wait(timeout=2)
+
+    def test_exact_swap_ceiling_refuses_but_retains_measurement(self):
+        import tempfile
+        from pathlib import Path
+        from types import SimpleNamespace
+        from unittest.mock import patch
+
+        from phase9_residency import Runtime
+
+        with tempfile.TemporaryDirectory() as folder:
+            runtime = Runtime(Path(folder), Path(folder))
+            with patch("shutil.disk_usage", return_value=SimpleNamespace(free=10 * 1024**3)):
+                for swap in (2047.99, 2048.0, 2100.0):
+                    with patch("subprocess.check_output", return_value=f"used = {swap}M"):
+                        if swap < 2048:
+                            self.assertEqual(runtime.resources()["swap_mib"], swap)
+                        else:
+                            with self.assertRaisesRegex(RuntimeError, "RESOURCE_GATE"):
+                                runtime.resources()
+                        self.assertEqual(runtime.last_resources["swap_mib"], swap)
+
     def test_inference_deadline_refused(self):
         import tempfile
         import time
